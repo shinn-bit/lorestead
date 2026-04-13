@@ -1,0 +1,36 @@
+{
+  "version": "53.0.0",
+  "files": {
+    "d422b93fdd7af8a726f8d81e061739e1abc6ae283a24aa074a7f84f49cbd8fd8": {
+      "displayName": "SessionsHandler/Code",
+      "source": {
+        "path": "asset.d422b93fdd7af8a726f8d81e061739e1abc6ae283a24aa074a7f84f49cbd8fd8",
+        "packaging": "zip"
+      },
+      "destinations": {
+        "713386557346-ap-northeast-1-b62c7b8f": {
+          "bucketName": "cdk-hnb659fds-assets-713386557346-ap-northeast-1",
+          "objectKey": "d422b93fdd7af8a726f8d81e061739e1abc6ae283a24aa074a7f84f49cbd8fd8.zip",
+          "region": "ap-northeast-1",
+          "assumeRoleArn": "arn:${AWS::Partition}:iam::713386557346:role/cdk-hnb659fds-file-publishing-role-713386557346-ap-northeast-1"
+        }
+      }
+    },
+    "0e2bb168d82719dd3944cc2042b9da605d8f9b597af4b3e4475540089edee4fd": {
+      "displayName": "LoresteadStack Template",
+      "source": {
+        "path": "LoresteadStack.template.json",
+        "packaging": "file"
+      },
+      "destinations": {
+        "713386557346-ap-northeast-1-4f633c2a": {
+          "bucketName": "cdk-hnb659fds-assets-713386557346-ap-northeast-1",
+          "objectKey": "0e2bb168d82719dd3944cc2042b9da605d8f9b597af4b3e4475540089edee4fd.json",
+          "region": "ap-northeast-1",
+          "assumeRoleArn": "arn:${AWS::Partition}:iam::713386557346:role/cdk-hnb659fds-file-publishing-role-713386557346-ap-northeast-1"
+        }
+      }
+    }
+  },
+  "dockerImages": {}
+}

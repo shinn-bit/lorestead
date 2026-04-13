@@ -1,0 +1,18 @@
+{
+  "name": "lorestead-backend",
+  "version": "1.0.0",
+  "scripts": {
+    "build": "esbuild src/sessions.ts src/progress.ts src/auth.ts --bundle --platform=node --target=node20 --outdir=dist --external:@aws-sdk/*"
+  },
+  "devDependencies": {
+    "@types/aws-lambda": "^8.10.145",
+    "@types/node": "^20.0.0",
+    "esbuild": "^0.25.0",
+    "typescript": "^5.0.0"
+  },
+  "dependencies": {
+    "@aws-sdk/client-cognito-identity-provider": "^3.0.0",
+    "@aws-sdk/client-dynamodb": "^3.0.0",
+    "@aws-sdk/lib-dynamodb": "^3.0.0"
+  }
+}

@@ -1,0 +1,1118 @@
+{
+  "/LoresteadStack/LoresteadUserPool": [
+    {
+      "type": "aws:cdk:analytics:construct",
+      "data": {
+        "userPoolName": "*",
+        "selfSignUpEnabled": true,
+        "signInAliases": {
+          "email": true
+        },
+        "autoVerify": {
+          "email": true
+        },
+        "passwordPolicy": {
+          "minLength": "*",
+          "requireLowercase": true,
+          "requireUppercase": false,
+          "requireDigits": true,
+          "requireSymbols": false
+        },
+        "accountRecovery": 2,
+        "removalPolicy": "retain"
+      }
+    }
+  ],
+  "/LoresteadStack/LoresteadUserPoolClient": [
+    {
+      "type": "aws:cdk:analytics:construct",
+      "data": {
+        "userPool": "*",
+        "userPoolClientName": "*",
+        "authFlows": {
+          "userPassword": true,
+          "userSrp": true
+        },
+        "generateSecret": false
+      }
+    }
+  ],
+  "/LoresteadStack/UsersTable": [
+    {
+      "type": "aws:cdk:analytics:construct",
+      "data": {
+        "tableName": "*",
+        "partitionKey": {
+          "name": "*",
+          "type": "S"
+        },
+        "billingMode": "PAY_PER_REQUEST",
+        "removalPolicy": "retain"
+      }
+    },
+    {
+      "type": "aws:cdk:hasPhysicalName",
+      "data": {
+        "Ref": "UsersTable9725E9C8"
+      }
+    }
+  ],
+  "/LoresteadStack/SessionsTable": [
+    {
+      "type": "aws:cdk:analytics:construct",
+      "data": {
+        "tableName": "*",
+        "partitionKey": {
+          "name": "*",
+          "type": "S"
+        },
+        "sortKey": {
+          "name": "*",
+          "type": "S"
+        },
+        "billingMode": "PAY_PER_REQUEST",
+        "removalPolicy": "retain"
+      }
+    },
+    {
+      "type": "aws:cdk:hasPhysicalName",
+      "data": {
+        "Ref": "SessionsTable7C302024"
+      }
+    }
+  ],
+  "/LoresteadStack/WorldProgressTable": [
+    {
+      "type": "aws:cdk:analytics:construct",
+      "data": {
+        "tableName": "*",
+        "partitionKey": {
+          "name": "*",
+          "type": "S"
+        },
+        "sortKey": {
+          "name": "*",
+          "type": "S"
+        },
+        "billingMode": "PAY_PER_REQUEST",
+        "removalPolicy": "retain"
+      }
+    },
+    {
+      "type": "aws:cdk:hasPhysicalName",
+      "data": {
+        "Ref": "WorldProgressTableE768B3BA"
+      }
+    }
+  ],
+  "/LoresteadStack/LambdaRole": [
+    {
+      "type": "aws:cdk:analytics:construct",
+      "data": {
+        "assumedBy": {
+          "principalAccount": "*",
+          "assumeRoleAction": "*"
+        },
+        "managedPolicies": [
+          {
+            "managedPolicyArn": "*"
+          }
+        ]
+      }
+    },
+    {
+      "type": "aws:cdk:analytics:method",
+      "data": {
+        "addToPrincipalPolicy": [
+          {}
+        ]
+      }
+    },
+    {
+      "type": "aws:cdk:analytics:method",
+      "data": {
+        "attachInlinePolicy": [
+          "*"
+        ]
+      }
+    },
+    {
+      "type": "aws:cdk:analytics:method",
+      "data": {
+        "attachInlinePolicy": [
+          "*"
+        ]
+      }
+    },
+    {
+      "type": "aws:cdk:analytics:method",
+      "data": {
+        "addToPrincipalPolicy": [
+          {}
+        ]
+      }
+    },
+    {
+      "type": "aws:cdk:analytics:method",
+      "data": {
+        "addToPrincipalPolicy": [
+          {}
+        ]
+      }
+    },
+    {
+      "type": "aws:cdk:analytics:method",
+      "data": {
+        "addToPrincipalPolicy": [
+          {}
+        ]
+      }
+    },
+    {
+      "type": "aws:cdk:analytics:method",
+      "data": {
+        "addToPrincipalPolicy": [
+          {}
+        ]
+      }
+    },
+    {
+      "type": "aws:cdk:analytics:method",
+      "data": {
+        "addToPrincipalPolicy": [
+          {}
+        ]
+      }
+    },
+    {
+      "type": "aws:cdk:analytics:method",
+      "data": {
+        "addToPrincipalPolicy": [
+          {}
+        ]
+      }
+    }
+  ],
+  "/LoresteadStack/SessionsHandler": [
+    {
+      "type": "aws:cdk:analytics:construct",
+      "data": {
+        "functionName": "*",
+        "runtime": "*",
+        "code": "*",
+        "handler": "*",
+        "environment": "*",
+        "role": "*",
+        "timeout": "*"
+      }
+    },
+    {
+      "type": "aws:cdk:analytics:method",
+      "data": {
+        "addEnvironment": [
+          "*",
+          "*"
+        ]
+      }
+    },
+    {
+      "type": "aws:cdk:analytics:method",
+      "data": {
+        "addEnvironment": [
+          "*",
+          "*"
+        ]
+      }
+    },
+    {
+      "type": "aws:cdk:analytics:method",
+      "data": {
+        "addEnvironment": [
+          "*",
+          "*"
+        ]
+      }
+    },
+    {
+      "type": "aws:cdk:analytics:method",
+      "data": {
+        "addEnvironment": [
+          "*",
+          "*"
+        ]
+      }
+    }
+  ],
+  "/LoresteadStack/ProgressHandler": [
+    {
+      "type": "aws:cdk:analytics:construct",
+      "data": {
+        "functionName": "*",
+        "runtime": "*",
+        "code": "*",
+        "handler": "*",
+        "environment": "*",
+        "role": "*",
+        "timeout": "*"
+      }
+    },
+    {
+      "type": "aws:cdk:analytics:method",
+      "data": {
+        "addEnvironment": [
+          "*",
+          "*"
+        ]
+      }
+    },
+    {
+      "type": "aws:cdk:analytics:method",
+      "data": {
+        "addEnvironment": [
+          "*",
+          "*"
+        ]
+      }
+    },
+    {
+      "type": "aws:cdk:analytics:method",
+      "data": {
+        "addEnvironment": [
+          "*",
+          "*"
+        ]
+      }
+    },
+    {
+      "type": "aws:cdk:analytics:method",
+      "data": {
+        "addEnvironment": [
+          "*",
+          "*"
+        ]
+      }
+    }
+  ],
+  "/LoresteadStack/AuthHandler": [
+    {
+      "type": "aws:cdk:analytics:construct",
+      "data": {
+        "functionName": "*",
+        "runtime": "*",
+        "code": "*",
+        "handler": "*",
+        "environment": "*",
+        "role": "*",
+        "timeout": "*"
+      }
+    },
+    {
+      "type": "aws:cdk:analytics:method",
+      "data": {
+        "addEnvironment": [
+          "*",
+          "*"
+        ]
+      }
+    },
+    {
+      "type": "aws:cdk:analytics:method",
+      "data": {
+        "addEnvironment": [
+          "*",
+          "*"
+        ]
+      }
+    },
+    {
+      "type": "aws:cdk:analytics:method",
+      "data": {
+        "addEnvironment": [
+          "*",
+          "*"
+        ]
+      }
+    },
+    {
+      "type": "aws:cdk:analytics:method",
+      "data": {
+        "addEnvironment": [
+          "*",
+          "*"
+        ]
+      }
+    },
+    {
+      "type": "aws:cdk:analytics:method",
+      "data": {
+        "addEnvironment": [
+          "*",
+          "*"
+        ]
+      }
+    }
+  ],
+  "/LoresteadStack/LoresteadApi": [
+    {
+      "type": "aws:cdk:analytics:construct",
+      "data": {
+        "restApiName": "*",
+        "defaultCorsPreflightOptions": {
+          "allowOrigins": "*",
+          "allowMethods": "*",
+          "allowHeaders": "*"
+        }
+      }
+    }
+  ],
+  "/LoresteadStack/ApiUrl": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "ApiUrl"
+    }
+  ],
+  "/LoresteadStack/UserPoolId": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "UserPoolId"
+    }
+  ],
+  "/LoresteadStack/UserPoolClientId": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "UserPoolClientId"
+    }
+  ],
+  "/LoresteadStack/BootstrapVersion": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "BootstrapVersion"
+    }
+  ],
+  "/LoresteadStack/CheckBootstrapVersion": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "CheckBootstrapVersion"
+    }
+  ],
+  "/LoresteadStack/LoresteadUserPool/Resource": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "LoresteadUserPoolE9139610"
+    }
+  ],
+  "/LoresteadStack/LoresteadUserPoolClient/Resource": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "LoresteadUserPoolClient797ADD80"
+    }
+  ],
+  "/LoresteadStack/UsersTable/Resource": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "UsersTable9725E9C8"
+    }
+  ],
+  "/LoresteadStack/UsersTable/ScalingRole": [
+    {
+      "type": "aws:cdk:analytics:construct",
+      "data": "*"
+    }
+  ],
+  "/LoresteadStack/SessionsTable/Resource": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "SessionsTable7C302024"
+    }
+  ],
+  "/LoresteadStack/SessionsTable/ScalingRole": [
+    {
+      "type": "aws:cdk:analytics:construct",
+      "data": "*"
+    }
+  ],
+  "/LoresteadStack/WorldProgressTable/Resource": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "WorldProgressTableE768B3BA"
+    }
+  ],
+  "/LoresteadStack/WorldProgressTable/ScalingRole": [
+    {
+      "type": "aws:cdk:analytics:construct",
+      "data": "*"
+    }
+  ],
+  "/LoresteadStack/LambdaRole/Resource": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "LambdaRole3A44B857"
+    }
+  ],
+  "/LoresteadStack/LambdaRole/DefaultPolicy": [
+    {
+      "type": "aws:cdk:analytics:construct",
+      "data": "*"
+    },
+    {
+      "type": "aws:cdk:analytics:method",
+      "data": {
+        "attachToRole": [
+          "*"
+        ]
+      }
+    },
+    {
+      "type": "aws:cdk:analytics:method",
+      "data": {
+        "attachToRole": [
+          "*"
+        ]
+      }
+    },
+    {
+      "type": "aws:cdk:analytics:method",
+      "data": {
+        "addStatements": [
+          {}
+        ]
+      }
+    },
+    {
+      "type": "aws:cdk:analytics:method",
+      "data": {
+        "addStatements": [
+          {}
+        ]
+      }
+    },
+    {
+      "type": "aws:cdk:analytics:method",
+      "data": {
+        "addStatements": [
+          {}
+        ]
+      }
+    },
+    {
+      "type": "aws:cdk:analytics:method",
+      "data": {
+        "addStatements": [
+          {}
+        ]
+      }
+    },
+    {
+      "type": "aws:cdk:analytics:method",
+      "data": {
+        "addStatements": [
+          {}
+        ]
+      }
+    },
+    {
+      "type": "aws:cdk:analytics:method",
+      "data": {
+        "addStatements": [
+          {}
+        ]
+      }
+    },
+    {
+      "type": "aws:cdk:analytics:method",
+      "data": {
+        "addStatements": [
+          {}
+        ]
+      }
+    }
+  ],
+  "/LoresteadStack/SessionsHandler/Resource": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "SessionsHandler0955C787"
+    }
+  ],
+  "/LoresteadStack/SessionsHandler/LogGroup": [
+    {
+      "type": "aws:cdk:analytics:construct",
+      "data": {
+        "logGroupName": "*"
+      }
+    }
+  ],
+  "/LoresteadStack/ProgressHandler/Resource": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "ProgressHandler4C102255"
+    }
+  ],
+  "/LoresteadStack/ProgressHandler/LogGroup": [
+    {
+      "type": "aws:cdk:analytics:construct",
+      "data": {
+        "logGroupName": "*"
+      }
+    }
+  ],
+  "/LoresteadStack/AuthHandler/Resource": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "AuthHandler9DC767B7"
+    }
+  ],
+  "/LoresteadStack/AuthHandler/LogGroup": [
+    {
+      "type": "aws:cdk:analytics:construct",
+      "data": {
+        "logGroupName": "*"
+      }
+    }
+  ],
+  "/LoresteadStack/LoresteadApi/Resource": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "LoresteadApiA0B9DC71"
+    }
+  ],
+  "/LoresteadStack/LoresteadApi/Deployment": [
+    {
+      "type": "aws:cdk:analytics:construct",
+      "data": {
+        "description": "*",
+        "api": "*",
+        "retainDeployments": "*"
+      }
+    },
+    {
+      "type": "aws:cdk:analytics:method",
+      "data": {
+        "addToLogicalId": [
+          {}
+        ]
+      }
+    },
+    {
+      "type": "aws:cdk:analytics:method",
+      "data": {
+        "addToLogicalId": [
+          {}
+        ]
+      }
+    },
+    {
+      "type": "aws:cdk:analytics:method",
+      "data": {
+        "addToLogicalId": [
+          {}
+        ]
+      }
+    },
+    {
+      "type": "aws:cdk:analytics:method",
+      "data": {
+        "addToLogicalId": [
+          {}
+        ]
+      }
+    },
+    {
+      "type": "aws:cdk:analytics:method",
+      "data": {
+        "addToLogicalId": [
+          {}
+        ]
+      }
+    },
+    {
+      "type": "aws:cdk:analytics:method",
+      "data": {
+        "addToLogicalId": [
+          {}
+        ]
+      }
+    },
+    {
+      "type": "aws:cdk:analytics:method",
+      "data": {
+        "addToLogicalId": [
+          {}
+        ]
+      }
+    },
+    {
+      "type": "aws:cdk:analytics:method",
+      "data": {
+        "addToLogicalId": [
+          {}
+        ]
+      }
+    },
+    {
+      "type": "aws:cdk:analytics:method",
+      "data": {
+        "addToLogicalId": [
+          {}
+        ]
+      }
+    },
+    {
+      "type": "aws:cdk:analytics:method",
+      "data": {
+        "addToLogicalId": [
+          {}
+        ]
+      }
+    },
+    {
+      "type": "aws:cdk:analytics:method",
+      "data": {
+        "addToLogicalId": [
+          {}
+        ]
+      }
+    },
+    {
+      "type": "aws:cdk:analytics:method",
+      "data": {
+        "addToLogicalId": [
+          {}
+        ]
+      }
+    }
+  ],
+  "/LoresteadStack/LoresteadApi/DeploymentStage.prod": [
+    {
+      "type": "aws:cdk:analytics:construct",
+      "data": {
+        "deployment": "*"
+      }
+    }
+  ],
+  "/LoresteadStack/LoresteadApi/Endpoint": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "LoresteadApiEndpoint5A2E8FD4"
+    }
+  ],
+  "/LoresteadStack/LoresteadApi/Default": [
+    {
+      "type": "aws:cdk:analytics:construct",
+      "data": "*"
+    }
+  ],
+  "/LoresteadStack/CDKMetadata/Default": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "CDKMetadata"
+    }
+  ],
+  "/LoresteadStack/LambdaRole/DefaultPolicy/Resource": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "LambdaRoleDefaultPolicy75625A82"
+    }
+  ],
+  "/LoresteadStack/SessionsHandler/Code/AssetBucket": [
+    {
+      "type": "aws:cdk:analytics:construct",
+      "data": "*"
+    }
+  ],
+  "/LoresteadStack/SessionsHandler/LogGroup/Resource": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "SessionsHandlerLogGroup45A8216A"
+    }
+  ],
+  "/LoresteadStack/ProgressHandler/Code/AssetBucket": [
+    {
+      "type": "aws:cdk:analytics:construct",
+      "data": "*"
+    }
+  ],
+  "/LoresteadStack/ProgressHandler/LogGroup/Resource": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "ProgressHandlerLogGroupC5585322"
+    }
+  ],
+  "/LoresteadStack/AuthHandler/Code/AssetBucket": [
+    {
+      "type": "aws:cdk:analytics:construct",
+      "data": "*"
+    }
+  ],
+  "/LoresteadStack/AuthHandler/LogGroup/Resource": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "AuthHandlerLogGroup2837CE3F"
+    }
+  ],
+  "/LoresteadStack/LoresteadApi/Deployment/Resource": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "LoresteadApiDeployment08D04D86639a63b4dedbe86abc7e53a59b987ba9"
+    }
+  ],
+  "/LoresteadStack/LoresteadApi/DeploymentStage.prod/Resource": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "LoresteadApiDeploymentStageprod1CDB6709"
+    }
+  ],
+  "/LoresteadStack/LoresteadApi/Default/OPTIONS": [
+    {
+      "type": "aws:cdk:analytics:construct",
+      "data": {
+        "resource": "*",
+        "httpMethod": "*",
+        "integration": "*",
+        "options": {
+          "authorizer": {
+            "authorizerId": "*",
+            "authorizationType": "*"
+          },
+          "apiKeyRequired": false,
+          "authorizationType": "*",
+          "methodResponses": [
+            {
+              "statusCode": "*",
+              "responseParameters": "*"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "type": "aws:cdk:analytics:method",
+      "data": {
+        "addMethodResponse": [
+          {
+            "statusCode": "*",
+            "responseParameters": "*"
+          }
+        ]
+      }
+    }
+  ],
+  "/LoresteadStack/LoresteadApi/Default/auth": [
+    {
+      "type": "aws:cdk:analytics:construct",
+      "data": {
+        "parent": "*",
+        "pathPart": "*"
+      }
+    }
+  ],
+  "/LoresteadStack/LoresteadApi/Default/sessions": [
+    {
+      "type": "aws:cdk:analytics:construct",
+      "data": {
+        "parent": "*",
+        "pathPart": "*"
+      }
+    }
+  ],
+  "/LoresteadStack/LoresteadApi/Default/progress": [
+    {
+      "type": "aws:cdk:analytics:construct",
+      "data": {
+        "parent": "*",
+        "pathPart": "*"
+      }
+    }
+  ],
+  "/LoresteadStack/LoresteadApi/Default/OPTIONS/Resource": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "LoresteadApiOPTIONSBC67EBE7"
+    }
+  ],
+  "/LoresteadStack/LoresteadApi/Default/auth/Resource": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "LoresteadApiauth1DDBF6D3"
+    }
+  ],
+  "/LoresteadStack/LoresteadApi/Default/auth/OPTIONS": [
+    {
+      "type": "aws:cdk:analytics:construct",
+      "data": {
+        "resource": "*",
+        "httpMethod": "*",
+        "integration": "*",
+        "options": {
+          "authorizer": {
+            "authorizerId": "*",
+            "authorizationType": "*"
+          },
+          "apiKeyRequired": false,
+          "authorizationType": "*",
+          "methodResponses": [
+            {
+              "statusCode": "*",
+              "responseParameters": "*"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "type": "aws:cdk:analytics:method",
+      "data": {
+        "addMethodResponse": [
+          {
+            "statusCode": "*",
+            "responseParameters": "*"
+          }
+        ]
+      }
+    }
+  ],
+  "/LoresteadStack/LoresteadApi/Default/auth/POST": [
+    {
+      "type": "aws:cdk:analytics:construct",
+      "data": {
+        "resource": "*",
+        "httpMethod": "*",
+        "integration": "*",
+        "options": "*"
+      }
+    }
+  ],
+  "/LoresteadStack/LoresteadApi/Default/sessions/Resource": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "LoresteadApisessions6AD64369"
+    }
+  ],
+  "/LoresteadStack/LoresteadApi/Default/sessions/OPTIONS": [
+    {
+      "type": "aws:cdk:analytics:construct",
+      "data": {
+        "resource": "*",
+        "httpMethod": "*",
+        "integration": "*",
+        "options": {
+          "authorizer": {
+            "authorizerId": "*",
+            "authorizationType": "*"
+          },
+          "apiKeyRequired": false,
+          "authorizationType": "*",
+          "methodResponses": [
+            {
+              "statusCode": "*",
+              "responseParameters": "*"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "type": "aws:cdk:analytics:method",
+      "data": {
+        "addMethodResponse": [
+          {
+            "statusCode": "*",
+            "responseParameters": "*"
+          }
+        ]
+      }
+    }
+  ],
+  "/LoresteadStack/LoresteadApi/Default/sessions/POST": [
+    {
+      "type": "aws:cdk:analytics:construct",
+      "data": {
+        "resource": "*",
+        "httpMethod": "*",
+        "integration": "*",
+        "options": "*"
+      }
+    }
+  ],
+  "/LoresteadStack/LoresteadApi/Default/sessions/GET": [
+    {
+      "type": "aws:cdk:analytics:construct",
+      "data": {
+        "resource": "*",
+        "httpMethod": "*",
+        "integration": "*",
+        "options": "*"
+      }
+    }
+  ],
+  "/LoresteadStack/LoresteadApi/Default/progress/Resource": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "LoresteadApiprogress99C179AE"
+    }
+  ],
+  "/LoresteadStack/LoresteadApi/Default/progress/OPTIONS": [
+    {
+      "type": "aws:cdk:analytics:construct",
+      "data": {
+        "resource": "*",
+        "httpMethod": "*",
+        "integration": "*",
+        "options": {
+          "authorizer": {
+            "authorizerId": "*",
+            "authorizationType": "*"
+          },
+          "apiKeyRequired": false,
+          "authorizationType": "*",
+          "methodResponses": [
+            {
+              "statusCode": "*",
+              "responseParameters": "*"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "type": "aws:cdk:analytics:method",
+      "data": {
+        "addMethodResponse": [
+          {
+            "statusCode": "*",
+            "responseParameters": "*"
+          }
+        ]
+      }
+    }
+  ],
+  "/LoresteadStack/LoresteadApi/Default/progress/GET": [
+    {
+      "type": "aws:cdk:analytics:construct",
+      "data": {
+        "resource": "*",
+        "httpMethod": "*",
+        "integration": "*",
+        "options": "*"
+      }
+    }
+  ],
+  "/LoresteadStack/LoresteadApi/Default/progress/PUT": [
+    {
+      "type": "aws:cdk:analytics:construct",
+      "data": {
+        "resource": "*",
+        "httpMethod": "*",
+        "integration": "*",
+        "options": "*"
+      }
+    }
+  ],
+  "/LoresteadStack/LoresteadApi/Default/auth/OPTIONS/Resource": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "LoresteadApiauthOPTIONSA3F3CA61"
+    }
+  ],
+  "/LoresteadStack/LoresteadApi/Default/auth/POST/ApiPermission.LoresteadStackLoresteadApi3200B40A.POST..auth": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "LoresteadApiauthPOSTApiPermissionLoresteadStackLoresteadApi3200B40APOSTauth9021030D"
+    }
+  ],
+  "/LoresteadStack/LoresteadApi/Default/auth/POST/ApiPermission.Test.LoresteadStackLoresteadApi3200B40A.POST..auth": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "LoresteadApiauthPOSTApiPermissionTestLoresteadStackLoresteadApi3200B40APOSTauth052C0DD8"
+    }
+  ],
+  "/LoresteadStack/LoresteadApi/Default/auth/POST/Resource": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "LoresteadApiauthPOST99F194E8"
+    }
+  ],
+  "/LoresteadStack/LoresteadApi/Default/sessions/OPTIONS/Resource": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "LoresteadApisessionsOPTIONSF6743947"
+    }
+  ],
+  "/LoresteadStack/LoresteadApi/Default/sessions/POST/ApiPermission.LoresteadStackLoresteadApi3200B40A.POST..sessions": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "LoresteadApisessionsPOSTApiPermissionLoresteadStackLoresteadApi3200B40APOSTsessions37BAF58D"
+    }
+  ],
+  "/LoresteadStack/LoresteadApi/Default/sessions/POST/ApiPermission.Test.LoresteadStackLoresteadApi3200B40A.POST..sessions": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "LoresteadApisessionsPOSTApiPermissionTestLoresteadStackLoresteadApi3200B40APOSTsessions06F851B9"
+    }
+  ],
+  "/LoresteadStack/LoresteadApi/Default/sessions/POST/Resource": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "LoresteadApisessionsPOST67B980BA"
+    }
+  ],
+  "/LoresteadStack/LoresteadApi/Default/sessions/GET/ApiPermission.LoresteadStackLoresteadApi3200B40A.GET..sessions": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "LoresteadApisessionsGETApiPermissionLoresteadStackLoresteadApi3200B40AGETsessionsB96A8D74"
+    }
+  ],
+  "/LoresteadStack/LoresteadApi/Default/sessions/GET/ApiPermission.Test.LoresteadStackLoresteadApi3200B40A.GET..sessions": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "LoresteadApisessionsGETApiPermissionTestLoresteadStackLoresteadApi3200B40AGETsessions7A9F126E"
+    }
+  ],
+  "/LoresteadStack/LoresteadApi/Default/sessions/GET/Resource": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "LoresteadApisessionsGET025D976F"
+    }
+  ],
+  "/LoresteadStack/LoresteadApi/Default/progress/OPTIONS/Resource": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "LoresteadApiprogressOPTIONS3AB44F2E"
+    }
+  ],
+  "/LoresteadStack/LoresteadApi/Default/progress/GET/ApiPermission.LoresteadStackLoresteadApi3200B40A.GET..progress": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "LoresteadApiprogressGETApiPermissionLoresteadStackLoresteadApi3200B40AGETprogress3B97462D"
+    }
+  ],
+  "/LoresteadStack/LoresteadApi/Default/progress/GET/ApiPermission.Test.LoresteadStackLoresteadApi3200B40A.GET..progress": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "LoresteadApiprogressGETApiPermissionTestLoresteadStackLoresteadApi3200B40AGETprogress1E236F95"
+    }
+  ],
+  "/LoresteadStack/LoresteadApi/Default/progress/GET/Resource": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "LoresteadApiprogressGETF65A2F8A"
+    }
+  ],
+  "/LoresteadStack/LoresteadApi/Default/progress/PUT/ApiPermission.LoresteadStackLoresteadApi3200B40A.PUT..progress": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "LoresteadApiprogressPUTApiPermissionLoresteadStackLoresteadApi3200B40APUTprogress3E2EE471"
+    }
+  ],
+  "/LoresteadStack/LoresteadApi/Default/progress/PUT/ApiPermission.Test.LoresteadStackLoresteadApi3200B40A.PUT..progress": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "LoresteadApiprogressPUTApiPermissionTestLoresteadStackLoresteadApi3200B40APUTprogressD84F1DD3"
+    }
+  ],
+  "/LoresteadStack/LoresteadApi/Default/progress/PUT/Resource": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "LoresteadApiprogressPUT45D31B6D"
+    }
+  ]
+}

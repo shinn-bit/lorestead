@@ -1,0 +1,1348 @@
+{
+ "Resources": {
+  "LoresteadUserPoolE9139610": {
+   "Type": "AWS::Cognito::UserPool",
+   "Properties": {
+    "AccountRecoverySetting": {
+     "RecoveryMechanisms": [
+      {
+       "Name": "verified_email",
+       "Priority": 1
+      }
+     ]
+    },
+    "AdminCreateUserConfig": {
+     "AllowAdminCreateUserOnly": false
+    },
+    "AutoVerifiedAttributes": [
+     "email"
+    ],
+    "EmailVerificationMessage": "The verification code to your new account is {####}",
+    "EmailVerificationSubject": "Verify your new account",
+    "Policies": {
+     "PasswordPolicy": {
+      "MinimumLength": 8,
+      "RequireLowercase": true,
+      "RequireNumbers": true,
+      "RequireSymbols": false,
+      "RequireUppercase": false
+     }
+    },
+    "SmsVerificationMessage": "The verification code to your new account is {####}",
+    "UserPoolName": "lorestead-users",
+    "UsernameAttributes": [
+     "email"
+    ],
+    "VerificationMessageTemplate": {
+     "DefaultEmailOption": "CONFIRM_WITH_CODE",
+     "EmailMessage": "The verification code to your new account is {####}",
+     "EmailSubject": "Verify your new account",
+     "SmsMessage": "The verification code to your new account is {####}"
+    }
+   },
+   "UpdateReplacePolicy": "Retain",
+   "DeletionPolicy": "Retain",
+   "Metadata": {
+    "aws:cdk:path": "LoresteadStack/LoresteadUserPool/Resource"
+   }
+  },
+  "LoresteadUserPoolClient797ADD80": {
+   "Type": "AWS::Cognito::UserPoolClient",
+   "Properties": {
+    "AllowedOAuthFlows": [
+     "implicit",
+     "code"
+    ],
+    "AllowedOAuthFlowsUserPoolClient": true,
+    "AllowedOAuthScopes": [
+     "profile",
+     "phone",
+     "email",
+     "openid",
+     "aws.cognito.signin.user.admin"
+    ],
+    "CallbackURLs": [
+     "https://example.com"
+    ],
+    "ClientName": "lorestead-web-client",
+    "ExplicitAuthFlows": [
+     "ALLOW_USER_PASSWORD_AUTH",
+     "ALLOW_USER_SRP_AUTH",
+     "ALLOW_REFRESH_TOKEN_AUTH"
+    ],
+    "GenerateSecret": false,
+    "SupportedIdentityProviders": [
+     "COGNITO"
+    ],
+    "UserPoolId": {
+     "Ref": "LoresteadUserPoolE9139610"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "LoresteadStack/LoresteadUserPoolClient/Resource"
+   }
+  },
+  "UsersTable9725E9C8": {
+   "Type": "AWS::DynamoDB::Table",
+   "Properties": {
+    "AttributeDefinitions": [
+     {
+      "AttributeName": "userId",
+      "AttributeType": "S"
+     }
+    ],
+    "BillingMode": "PAY_PER_REQUEST",
+    "KeySchema": [
+     {
+      "AttributeName": "userId",
+      "KeyType": "HASH"
+     }
+    ],
+    "TableName": "lorestead-users"
+   },
+   "UpdateReplacePolicy": "Retain",
+   "DeletionPolicy": "Retain",
+   "Metadata": {
+    "aws:cdk:path": "LoresteadStack/UsersTable/Resource"
+   }
+  },
+  "SessionsTable7C302024": {
+   "Type": "AWS::DynamoDB::Table",
+   "Properties": {
+    "AttributeDefinitions": [
+     {
+      "AttributeName": "userId",
+      "AttributeType": "S"
+     },
+     {
+      "AttributeName": "sessionId",
+      "AttributeType": "S"
+     }
+    ],
+    "BillingMode": "PAY_PER_REQUEST",
+    "KeySchema": [
+     {
+      "AttributeName": "userId",
+      "KeyType": "HASH"
+     },
+     {
+      "AttributeName": "sessionId",
+      "KeyType": "RANGE"
+     }
+    ],
+    "TableName": "lorestead-sessions"
+   },
+   "UpdateReplacePolicy": "Retain",
+   "DeletionPolicy": "Retain",
+   "Metadata": {
+    "aws:cdk:path": "LoresteadStack/SessionsTable/Resource"
+   }
+  },
+  "WorldProgressTableE768B3BA": {
+   "Type": "AWS::DynamoDB::Table",
+   "Properties": {
+    "AttributeDefinitions": [
+     {
+      "AttributeName": "userId",
+      "AttributeType": "S"
+     },
+     {
+      "AttributeName": "worldId",
+      "AttributeType": "S"
+     }
+    ],
+    "BillingMode": "PAY_PER_REQUEST",
+    "KeySchema": [
+     {
+      "AttributeName": "userId",
+      "KeyType": "HASH"
+     },
+     {
+      "AttributeName": "worldId",
+      "KeyType": "RANGE"
+     }
+    ],
+    "TableName": "lorestead-world-progress"
+   },
+   "UpdateReplacePolicy": "Retain",
+   "DeletionPolicy": "Retain",
+   "Metadata": {
+    "aws:cdk:path": "LoresteadStack/WorldProgressTable/Resource"
+   }
+  },
+  "LambdaRole3A44B857": {
+   "Type": "AWS::IAM::Role",
+   "Properties": {
+    "AssumeRolePolicyDocument": {
+     "Statement": [
+      {
+       "Action": "sts:AssumeRole",
+       "Effect": "Allow",
+       "Principal": {
+        "Service": "lambda.amazonaws.com"
+       }
+      }
+     ],
+     "Version": "2012-10-17"
+    },
+    "ManagedPolicyArns": [
+     {
+      "Fn::Join": [
+       "",
+       [
+        "arn:",
+        {
+         "Ref": "AWS::Partition"
+        },
+        ":iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
+       ]
+      ]
+     }
+    ]
+   },
+   "Metadata": {
+    "aws:cdk:path": "LoresteadStack/LambdaRole/Resource"
+   }
+  },
+  "LambdaRoleDefaultPolicy75625A82": {
+   "Type": "AWS::IAM::Policy",
+   "Properties": {
+    "PolicyDocument": {
+     "Statement": [
+      {
+       "Action": [
+        "dynamodb:BatchGetItem",
+        "dynamodb:BatchWriteItem",
+        "dynamodb:ConditionCheckItem",
+        "dynamodb:DeleteItem",
+        "dynamodb:DescribeTable",
+        "dynamodb:GetItem",
+        "dynamodb:GetRecords",
+        "dynamodb:GetShardIterator",
+        "dynamodb:PutItem",
+        "dynamodb:Query",
+        "dynamodb:Scan",
+        "dynamodb:UpdateItem"
+       ],
+       "Effect": "Allow",
+       "Resource": [
+        {
+         "Fn::GetAtt": [
+          "SessionsTable7C302024",
+          "Arn"
+         ]
+        },
+        {
+         "Fn::GetAtt": [
+          "UsersTable9725E9C8",
+          "Arn"
+         ]
+        },
+        {
+         "Fn::GetAtt": [
+          "WorldProgressTableE768B3BA",
+          "Arn"
+         ]
+        }
+       ]
+      },
+      {
+       "Action": [
+        "cognito-idp:ConfirmForgotPassword",
+        "cognito-idp:ConfirmSignUp",
+        "cognito-idp:ForgotPassword",
+        "cognito-idp:GetUser",
+        "cognito-idp:InitiateAuth",
+        "cognito-idp:SignUp"
+       ],
+       "Effect": "Allow",
+       "Resource": {
+        "Fn::GetAtt": [
+         "LoresteadUserPoolE9139610",
+         "Arn"
+        ]
+       }
+      }
+     ],
+     "Version": "2012-10-17"
+    },
+    "PolicyName": "LambdaRoleDefaultPolicy75625A82",
+    "Roles": [
+     {
+      "Ref": "LambdaRole3A44B857"
+     }
+    ]
+   },
+   "Metadata": {
+    "aws:cdk:path": "LoresteadStack/LambdaRole/DefaultPolicy/Resource"
+   }
+  },
+  "SessionsHandler0955C787": {
+   "Type": "AWS::Lambda::Function",
+   "Properties": {
+    "Code": {
+     "S3Bucket": "cdk-hnb659fds-assets-713386557346-ap-northeast-1",
+     "S3Key": "d422b93fdd7af8a726f8d81e061739e1abc6ae283a24aa074a7f84f49cbd8fd8.zip"
+    },
+    "Environment": {
+     "Variables": {
+      "USERS_TABLE": {
+       "Ref": "UsersTable9725E9C8"
+      },
+      "SESSIONS_TABLE": {
+       "Ref": "SessionsTable7C302024"
+      },
+      "WORLD_PROGRESS_TABLE": {
+       "Ref": "WorldProgressTableE768B3BA"
+      },
+      "USER_POOL_ID": {
+       "Ref": "LoresteadUserPoolE9139610"
+      }
+     }
+    },
+    "FunctionName": "lorestead-sessions",
+    "Handler": "sessions.handler",
+    "Role": {
+     "Fn::GetAtt": [
+      "LambdaRole3A44B857",
+      "Arn"
+     ]
+    },
+    "Runtime": "nodejs20.x",
+    "Timeout": 10
+   },
+   "DependsOn": [
+    "LambdaRoleDefaultPolicy75625A82",
+    "LambdaRole3A44B857"
+   ],
+   "Metadata": {
+    "aws:cdk:path": "LoresteadStack/SessionsHandler/Resource",
+    "aws:asset:path": "asset.d422b93fdd7af8a726f8d81e061739e1abc6ae283a24aa074a7f84f49cbd8fd8",
+    "aws:asset:is-bundled": false,
+    "aws:asset:property": "Code"
+   }
+  },
+  "SessionsHandlerLogGroup45A8216A": {
+   "Type": "AWS::Logs::LogGroup",
+   "Properties": {
+    "LogGroupName": {
+     "Fn::Join": [
+      "",
+      [
+       "/aws/lambda/",
+       {
+        "Ref": "SessionsHandler0955C787"
+       }
+      ]
+     ]
+    },
+    "RetentionInDays": 731
+   },
+   "UpdateReplacePolicy": "Retain",
+   "DeletionPolicy": "Retain",
+   "Metadata": {
+    "aws:cdk:path": "LoresteadStack/SessionsHandler/LogGroup/Resource"
+   }
+  },
+  "ProgressHandler4C102255": {
+   "Type": "AWS::Lambda::Function",
+   "Properties": {
+    "Code": {
+     "S3Bucket": "cdk-hnb659fds-assets-713386557346-ap-northeast-1",
+     "S3Key": "d422b93fdd7af8a726f8d81e061739e1abc6ae283a24aa074a7f84f49cbd8fd8.zip"
+    },
+    "Environment": {
+     "Variables": {
+      "USERS_TABLE": {
+       "Ref": "UsersTable9725E9C8"
+      },
+      "SESSIONS_TABLE": {
+       "Ref": "SessionsTable7C302024"
+      },
+      "WORLD_PROGRESS_TABLE": {
+       "Ref": "WorldProgressTableE768B3BA"
+      },
+      "USER_POOL_ID": {
+       "Ref": "LoresteadUserPoolE9139610"
+      }
+     }
+    },
+    "FunctionName": "lorestead-progress",
+    "Handler": "progress.handler",
+    "Role": {
+     "Fn::GetAtt": [
+      "LambdaRole3A44B857",
+      "Arn"
+     ]
+    },
+    "Runtime": "nodejs20.x",
+    "Timeout": 10
+   },
+   "DependsOn": [
+    "LambdaRoleDefaultPolicy75625A82",
+    "LambdaRole3A44B857"
+   ],
+   "Metadata": {
+    "aws:cdk:path": "LoresteadStack/ProgressHandler/Resource",
+    "aws:asset:path": "asset.d422b93fdd7af8a726f8d81e061739e1abc6ae283a24aa074a7f84f49cbd8fd8",
+    "aws:asset:is-bundled": false,
+    "aws:asset:property": "Code"
+   }
+  },
+  "ProgressHandlerLogGroupC5585322": {
+   "Type": "AWS::Logs::LogGroup",
+   "Properties": {
+    "LogGroupName": {
+     "Fn::Join": [
+      "",
+      [
+       "/aws/lambda/",
+       {
+        "Ref": "ProgressHandler4C102255"
+       }
+      ]
+     ]
+    },
+    "RetentionInDays": 731
+   },
+   "UpdateReplacePolicy": "Retain",
+   "DeletionPolicy": "Retain",
+   "Metadata": {
+    "aws:cdk:path": "LoresteadStack/ProgressHandler/LogGroup/Resource"
+   }
+  },
+  "AuthHandler9DC767B7": {
+   "Type": "AWS::Lambda::Function",
+   "Properties": {
+    "Code": {
+     "S3Bucket": "cdk-hnb659fds-assets-713386557346-ap-northeast-1",
+     "S3Key": "d422b93fdd7af8a726f8d81e061739e1abc6ae283a24aa074a7f84f49cbd8fd8.zip"
+    },
+    "Environment": {
+     "Variables": {
+      "USERS_TABLE": {
+       "Ref": "UsersTable9725E9C8"
+      },
+      "SESSIONS_TABLE": {
+       "Ref": "SessionsTable7C302024"
+      },
+      "WORLD_PROGRESS_TABLE": {
+       "Ref": "WorldProgressTableE768B3BA"
+      },
+      "USER_POOL_ID": {
+       "Ref": "LoresteadUserPoolE9139610"
+      },
+      "USER_POOL_CLIENT_ID": {
+       "Ref": "LoresteadUserPoolClient797ADD80"
+      }
+     }
+    },
+    "FunctionName": "lorestead-auth",
+    "Handler": "auth.handler",
+    "Role": {
+     "Fn::GetAtt": [
+      "LambdaRole3A44B857",
+      "Arn"
+     ]
+    },
+    "Runtime": "nodejs20.x",
+    "Timeout": 10
+   },
+   "DependsOn": [
+    "LambdaRoleDefaultPolicy75625A82",
+    "LambdaRole3A44B857"
+   ],
+   "Metadata": {
+    "aws:cdk:path": "LoresteadStack/AuthHandler/Resource",
+    "aws:asset:path": "asset.d422b93fdd7af8a726f8d81e061739e1abc6ae283a24aa074a7f84f49cbd8fd8",
+    "aws:asset:is-bundled": false,
+    "aws:asset:property": "Code"
+   }
+  },
+  "AuthHandlerLogGroup2837CE3F": {
+   "Type": "AWS::Logs::LogGroup",
+   "Properties": {
+    "LogGroupName": {
+     "Fn::Join": [
+      "",
+      [
+       "/aws/lambda/",
+       {
+        "Ref": "AuthHandler9DC767B7"
+       }
+      ]
+     ]
+    },
+    "RetentionInDays": 731
+   },
+   "UpdateReplacePolicy": "Retain",
+   "DeletionPolicy": "Retain",
+   "Metadata": {
+    "aws:cdk:path": "LoresteadStack/AuthHandler/LogGroup/Resource"
+   }
+  },
+  "LoresteadApiA0B9DC71": {
+   "Type": "AWS::ApiGateway::RestApi",
+   "Properties": {
+    "Name": "lorestead-api"
+   },
+   "Metadata": {
+    "aws:cdk:path": "LoresteadStack/LoresteadApi/Resource"
+   }
+  },
+  "LoresteadApiDeployment08D04D86639a63b4dedbe86abc7e53a59b987ba9": {
+   "Type": "AWS::ApiGateway::Deployment",
+   "Properties": {
+    "Description": "Automatically created by the RestApi construct",
+    "RestApiId": {
+     "Ref": "LoresteadApiA0B9DC71"
+    }
+   },
+   "DependsOn": [
+    "LoresteadApiauthOPTIONSA3F3CA61",
+    "LoresteadApiauthPOST99F194E8",
+    "LoresteadApiauth1DDBF6D3",
+    "LoresteadApiOPTIONSBC67EBE7",
+    "LoresteadApiprogressGETF65A2F8A",
+    "LoresteadApiprogressOPTIONS3AB44F2E",
+    "LoresteadApiprogressPUT45D31B6D",
+    "LoresteadApiprogress99C179AE",
+    "LoresteadApisessionsGET025D976F",
+    "LoresteadApisessionsOPTIONSF6743947",
+    "LoresteadApisessionsPOST67B980BA",
+    "LoresteadApisessions6AD64369"
+   ],
+   "Metadata": {
+    "aws:cdk:path": "LoresteadStack/LoresteadApi/Deployment/Resource",
+    "aws:cdk:do-not-refactor": true
+   }
+  },
+  "LoresteadApiDeploymentStageprod1CDB6709": {
+   "Type": "AWS::ApiGateway::Stage",
+   "Properties": {
+    "DeploymentId": {
+     "Ref": "LoresteadApiDeployment08D04D86639a63b4dedbe86abc7e53a59b987ba9"
+    },
+    "RestApiId": {
+     "Ref": "LoresteadApiA0B9DC71"
+    },
+    "StageName": "prod"
+   },
+   "Metadata": {
+    "aws:cdk:path": "LoresteadStack/LoresteadApi/DeploymentStage.prod/Resource"
+   }
+  },
+  "LoresteadApiOPTIONSBC67EBE7": {
+   "Type": "AWS::ApiGateway::Method",
+   "Properties": {
+    "ApiKeyRequired": false,
+    "AuthorizationType": "NONE",
+    "HttpMethod": "OPTIONS",
+    "Integration": {
+     "IntegrationResponses": [
+      {
+       "ResponseParameters": {
+        "method.response.header.Access-Control-Allow-Headers": "'Content-Type,Authorization'",
+        "method.response.header.Access-Control-Allow-Origin": "'*'",
+        "method.response.header.Access-Control-Allow-Methods": "'OPTIONS,GET,PUT,POST,DELETE,PATCH,HEAD'"
+       },
+       "StatusCode": "204"
+      }
+     ],
+     "RequestTemplates": {
+      "application/json": "{ statusCode: 200 }"
+     },
+     "Type": "MOCK"
+    },
+    "MethodResponses": [
+     {
+      "ResponseParameters": {
+       "method.response.header.Access-Control-Allow-Headers": true,
+       "method.response.header.Access-Control-Allow-Origin": true,
+       "method.response.header.Access-Control-Allow-Methods": true
+      },
+      "StatusCode": "204"
+     }
+    ],
+    "ResourceId": {
+     "Fn::GetAtt": [
+      "LoresteadApiA0B9DC71",
+      "RootResourceId"
+     ]
+    },
+    "RestApiId": {
+     "Ref": "LoresteadApiA0B9DC71"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "LoresteadStack/LoresteadApi/Default/OPTIONS/Resource"
+   }
+  },
+  "LoresteadApiauth1DDBF6D3": {
+   "Type": "AWS::ApiGateway::Resource",
+   "Properties": {
+    "ParentId": {
+     "Fn::GetAtt": [
+      "LoresteadApiA0B9DC71",
+      "RootResourceId"
+     ]
+    },
+    "PathPart": "auth",
+    "RestApiId": {
+     "Ref": "LoresteadApiA0B9DC71"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "LoresteadStack/LoresteadApi/Default/auth/Resource"
+   }
+  },
+  "LoresteadApiauthOPTIONSA3F3CA61": {
+   "Type": "AWS::ApiGateway::Method",
+   "Properties": {
+    "ApiKeyRequired": false,
+    "AuthorizationType": "NONE",
+    "HttpMethod": "OPTIONS",
+    "Integration": {
+     "IntegrationResponses": [
+      {
+       "ResponseParameters": {
+        "method.response.header.Access-Control-Allow-Headers": "'Content-Type,Authorization'",
+        "method.response.header.Access-Control-Allow-Origin": "'*'",
+        "method.response.header.Access-Control-Allow-Methods": "'OPTIONS,GET,PUT,POST,DELETE,PATCH,HEAD'"
+       },
+       "StatusCode": "204"
+      }
+     ],
+     "RequestTemplates": {
+      "application/json": "{ statusCode: 200 }"
+     },
+     "Type": "MOCK"
+    },
+    "MethodResponses": [
+     {
+      "ResponseParameters": {
+       "method.response.header.Access-Control-Allow-Headers": true,
+       "method.response.header.Access-Control-Allow-Origin": true,
+       "method.response.header.Access-Control-Allow-Methods": true
+      },
+      "StatusCode": "204"
+     }
+    ],
+    "ResourceId": {
+     "Ref": "LoresteadApiauth1DDBF6D3"
+    },
+    "RestApiId": {
+     "Ref": "LoresteadApiA0B9DC71"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "LoresteadStack/LoresteadApi/Default/auth/OPTIONS/Resource"
+   }
+  },
+  "LoresteadApiauthPOSTApiPermissionLoresteadStackLoresteadApi3200B40APOSTauth9021030D": {
+   "Type": "AWS::Lambda::Permission",
+   "Properties": {
+    "Action": "lambda:InvokeFunction",
+    "FunctionName": {
+     "Fn::GetAtt": [
+      "AuthHandler9DC767B7",
+      "Arn"
+     ]
+    },
+    "Principal": "apigateway.amazonaws.com",
+    "SourceArn": {
+     "Fn::Join": [
+      "",
+      [
+       "arn:aws:execute-api:ap-northeast-1:713386557346:",
+       {
+        "Ref": "LoresteadApiA0B9DC71"
+       },
+       "/",
+       {
+        "Ref": "LoresteadApiDeploymentStageprod1CDB6709"
+       },
+       "/POST/auth"
+      ]
+     ]
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "LoresteadStack/LoresteadApi/Default/auth/POST/ApiPermission.LoresteadStackLoresteadApi3200B40A.POST..auth"
+   }
+  },
+  "LoresteadApiauthPOSTApiPermissionTestLoresteadStackLoresteadApi3200B40APOSTauth052C0DD8": {
+   "Type": "AWS::Lambda::Permission",
+   "Properties": {
+    "Action": "lambda:InvokeFunction",
+    "FunctionName": {
+     "Fn::GetAtt": [
+      "AuthHandler9DC767B7",
+      "Arn"
+     ]
+    },
+    "Principal": "apigateway.amazonaws.com",
+    "SourceArn": {
+     "Fn::Join": [
+      "",
+      [
+       "arn:aws:execute-api:ap-northeast-1:713386557346:",
+       {
+        "Ref": "LoresteadApiA0B9DC71"
+       },
+       "/test-invoke-stage/POST/auth"
+      ]
+     ]
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "LoresteadStack/LoresteadApi/Default/auth/POST/ApiPermission.Test.LoresteadStackLoresteadApi3200B40A.POST..auth"
+   }
+  },
+  "LoresteadApiauthPOST99F194E8": {
+   "Type": "AWS::ApiGateway::Method",
+   "Properties": {
+    "AuthorizationType": "NONE",
+    "HttpMethod": "POST",
+    "Integration": {
+     "IntegrationHttpMethod": "POST",
+     "Type": "AWS_PROXY",
+     "Uri": {
+      "Fn::Join": [
+       "",
+       [
+        "arn:aws:apigateway:ap-northeast-1:lambda:path/2015-03-31/functions/",
+        {
+         "Fn::GetAtt": [
+          "AuthHandler9DC767B7",
+          "Arn"
+         ]
+        },
+        "/invocations"
+       ]
+      ]
+     }
+    },
+    "ResourceId": {
+     "Ref": "LoresteadApiauth1DDBF6D3"
+    },
+    "RestApiId": {
+     "Ref": "LoresteadApiA0B9DC71"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "LoresteadStack/LoresteadApi/Default/auth/POST/Resource"
+   }
+  },
+  "LoresteadApisessions6AD64369": {
+   "Type": "AWS::ApiGateway::Resource",
+   "Properties": {
+    "ParentId": {
+     "Fn::GetAtt": [
+      "LoresteadApiA0B9DC71",
+      "RootResourceId"
+     ]
+    },
+    "PathPart": "sessions",
+    "RestApiId": {
+     "Ref": "LoresteadApiA0B9DC71"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "LoresteadStack/LoresteadApi/Default/sessions/Resource"
+   }
+  },
+  "LoresteadApisessionsOPTIONSF6743947": {
+   "Type": "AWS::ApiGateway::Method",
+   "Properties": {
+    "ApiKeyRequired": false,
+    "AuthorizationType": "NONE",
+    "HttpMethod": "OPTIONS",
+    "Integration": {
+     "IntegrationResponses": [
+      {
+       "ResponseParameters": {
+        "method.response.header.Access-Control-Allow-Headers": "'Content-Type,Authorization'",
+        "method.response.header.Access-Control-Allow-Origin": "'*'",
+        "method.response.header.Access-Control-Allow-Methods": "'OPTIONS,GET,PUT,POST,DELETE,PATCH,HEAD'"
+       },
+       "StatusCode": "204"
+      }
+     ],
+     "RequestTemplates": {
+      "application/json": "{ statusCode: 200 }"
+     },
+     "Type": "MOCK"
+    },
+    "MethodResponses": [
+     {
+      "ResponseParameters": {
+       "method.response.header.Access-Control-Allow-Headers": true,
+       "method.response.header.Access-Control-Allow-Origin": true,
+       "method.response.header.Access-Control-Allow-Methods": true
+      },
+      "StatusCode": "204"
+     }
+    ],
+    "ResourceId": {
+     "Ref": "LoresteadApisessions6AD64369"
+    },
+    "RestApiId": {
+     "Ref": "LoresteadApiA0B9DC71"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "LoresteadStack/LoresteadApi/Default/sessions/OPTIONS/Resource"
+   }
+  },
+  "LoresteadApisessionsPOSTApiPermissionLoresteadStackLoresteadApi3200B40APOSTsessions37BAF58D": {
+   "Type": "AWS::Lambda::Permission",
+   "Properties": {
+    "Action": "lambda:InvokeFunction",
+    "FunctionName": {
+     "Fn::GetAtt": [
+      "SessionsHandler0955C787",
+      "Arn"
+     ]
+    },
+    "Principal": "apigateway.amazonaws.com",
+    "SourceArn": {
+     "Fn::Join": [
+      "",
+      [
+       "arn:aws:execute-api:ap-northeast-1:713386557346:",
+       {
+        "Ref": "LoresteadApiA0B9DC71"
+       },
+       "/",
+       {
+        "Ref": "LoresteadApiDeploymentStageprod1CDB6709"
+       },
+       "/POST/sessions"
+      ]
+     ]
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "LoresteadStack/LoresteadApi/Default/sessions/POST/ApiPermission.LoresteadStackLoresteadApi3200B40A.POST..sessions"
+   }
+  },
+  "LoresteadApisessionsPOSTApiPermissionTestLoresteadStackLoresteadApi3200B40APOSTsessions06F851B9": {
+   "Type": "AWS::Lambda::Permission",
+   "Properties": {
+    "Action": "lambda:InvokeFunction",
+    "FunctionName": {
+     "Fn::GetAtt": [
+      "SessionsHandler0955C787",
+      "Arn"
+     ]
+    },
+    "Principal": "apigateway.amazonaws.com",
+    "SourceArn": {
+     "Fn::Join": [
+      "",
+      [
+       "arn:aws:execute-api:ap-northeast-1:713386557346:",
+       {
+        "Ref": "LoresteadApiA0B9DC71"
+       },
+       "/test-invoke-stage/POST/sessions"
+      ]
+     ]
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "LoresteadStack/LoresteadApi/Default/sessions/POST/ApiPermission.Test.LoresteadStackLoresteadApi3200B40A.POST..sessions"
+   }
+  },
+  "LoresteadApisessionsPOST67B980BA": {
+   "Type": "AWS::ApiGateway::Method",
+   "Properties": {
+    "AuthorizationType": "NONE",
+    "HttpMethod": "POST",
+    "Integration": {
+     "IntegrationHttpMethod": "POST",
+     "Type": "AWS_PROXY",
+     "Uri": {
+      "Fn::Join": [
+       "",
+       [
+        "arn:aws:apigateway:ap-northeast-1:lambda:path/2015-03-31/functions/",
+        {
+         "Fn::GetAtt": [
+          "SessionsHandler0955C787",
+          "Arn"
+         ]
+        },
+        "/invocations"
+       ]
+      ]
+     }
+    },
+    "ResourceId": {
+     "Ref": "LoresteadApisessions6AD64369"
+    },
+    "RestApiId": {
+     "Ref": "LoresteadApiA0B9DC71"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "LoresteadStack/LoresteadApi/Default/sessions/POST/Resource"
+   }
+  },
+  "LoresteadApisessionsGETApiPermissionLoresteadStackLoresteadApi3200B40AGETsessionsB96A8D74": {
+   "Type": "AWS::Lambda::Permission",
+   "Properties": {
+    "Action": "lambda:InvokeFunction",
+    "FunctionName": {
+     "Fn::GetAtt": [
+      "SessionsHandler0955C787",
+      "Arn"
+     ]
+    },
+    "Principal": "apigateway.amazonaws.com",
+    "SourceArn": {
+     "Fn::Join": [
+      "",
+      [
+       "arn:aws:execute-api:ap-northeast-1:713386557346:",
+       {
+        "Ref": "LoresteadApiA0B9DC71"
+       },
+       "/",
+       {
+        "Ref": "LoresteadApiDeploymentStageprod1CDB6709"
+       },
+       "/GET/sessions"
+      ]
+     ]
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "LoresteadStack/LoresteadApi/Default/sessions/GET/ApiPermission.LoresteadStackLoresteadApi3200B40A.GET..sessions"
+   }
+  },
+  "LoresteadApisessionsGETApiPermissionTestLoresteadStackLoresteadApi3200B40AGETsessions7A9F126E": {
+   "Type": "AWS::Lambda::Permission",
+   "Properties": {
+    "Action": "lambda:InvokeFunction",
+    "FunctionName": {
+     "Fn::GetAtt": [
+      "SessionsHandler0955C787",
+      "Arn"
+     ]
+    },
+    "Principal": "apigateway.amazonaws.com",
+    "SourceArn": {
+     "Fn::Join": [
+      "",
+      [
+       "arn:aws:execute-api:ap-northeast-1:713386557346:",
+       {
+        "Ref": "LoresteadApiA0B9DC71"
+       },
+       "/test-invoke-stage/GET/sessions"
+      ]
+     ]
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "LoresteadStack/LoresteadApi/Default/sessions/GET/ApiPermission.Test.LoresteadStackLoresteadApi3200B40A.GET..sessions"
+   }
+  },
+  "LoresteadApisessionsGET025D976F": {
+   "Type": "AWS::ApiGateway::Method",
+   "Properties": {
+    "AuthorizationType": "NONE",
+    "HttpMethod": "GET",
+    "Integration": {
+     "IntegrationHttpMethod": "POST",
+     "Type": "AWS_PROXY",
+     "Uri": {
+      "Fn::Join": [
+       "",
+       [
+        "arn:aws:apigateway:ap-northeast-1:lambda:path/2015-03-31/functions/",
+        {
+         "Fn::GetAtt": [
+          "SessionsHandler0955C787",
+          "Arn"
+         ]
+        },
+        "/invocations"
+       ]
+      ]
+     }
+    },
+    "ResourceId": {
+     "Ref": "LoresteadApisessions6AD64369"
+    },
+    "RestApiId": {
+     "Ref": "LoresteadApiA0B9DC71"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "LoresteadStack/LoresteadApi/Default/sessions/GET/Resource"
+   }
+  },
+  "LoresteadApiprogress99C179AE": {
+   "Type": "AWS::ApiGateway::Resource",
+   "Properties": {
+    "ParentId": {
+     "Fn::GetAtt": [
+      "LoresteadApiA0B9DC71",
+      "RootResourceId"
+     ]
+    },
+    "PathPart": "progress",
+    "RestApiId": {
+     "Ref": "LoresteadApiA0B9DC71"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "LoresteadStack/LoresteadApi/Default/progress/Resource"
+   }
+  },
+  "LoresteadApiprogressOPTIONS3AB44F2E": {
+   "Type": "AWS::ApiGateway::Method",
+   "Properties": {
+    "ApiKeyRequired": false,
+    "AuthorizationType": "NONE",
+    "HttpMethod": "OPTIONS",
+    "Integration": {
+     "IntegrationResponses": [
+      {
+       "ResponseParameters": {
+        "method.response.header.Access-Control-Allow-Headers": "'Content-Type,Authorization'",
+        "method.response.header.Access-Control-Allow-Origin": "'*'",
+        "method.response.header.Access-Control-Allow-Methods": "'OPTIONS,GET,PUT,POST,DELETE,PATCH,HEAD'"
+       },
+       "StatusCode": "204"
+      }
+     ],
+     "RequestTemplates": {
+      "application/json": "{ statusCode: 200 }"
+     },
+     "Type": "MOCK"
+    },
+    "MethodResponses": [
+     {
+      "ResponseParameters": {
+       "method.response.header.Access-Control-Allow-Headers": true,
+       "method.response.header.Access-Control-Allow-Origin": true,
+       "method.response.header.Access-Control-Allow-Methods": true
+      },
+      "StatusCode": "204"
+     }
+    ],
+    "ResourceId": {
+     "Ref": "LoresteadApiprogress99C179AE"
+    },
+    "RestApiId": {
+     "Ref": "LoresteadApiA0B9DC71"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "LoresteadStack/LoresteadApi/Default/progress/OPTIONS/Resource"
+   }
+  },
+  "LoresteadApiprogressGETApiPermissionLoresteadStackLoresteadApi3200B40AGETprogress3B97462D": {
+   "Type": "AWS::Lambda::Permission",
+   "Properties": {
+    "Action": "lambda:InvokeFunction",
+    "FunctionName": {
+     "Fn::GetAtt": [
+      "ProgressHandler4C102255",
+      "Arn"
+     ]
+    },
+    "Principal": "apigateway.amazonaws.com",
+    "SourceArn": {
+     "Fn::Join": [
+      "",
+      [
+       "arn:aws:execute-api:ap-northeast-1:713386557346:",
+       {
+        "Ref": "LoresteadApiA0B9DC71"
+       },
+       "/",
+       {
+        "Ref": "LoresteadApiDeploymentStageprod1CDB6709"
+       },
+       "/GET/progress"
+      ]
+     ]
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "LoresteadStack/LoresteadApi/Default/progress/GET/ApiPermission.LoresteadStackLoresteadApi3200B40A.GET..progress"
+   }
+  },
+  "LoresteadApiprogressGETApiPermissionTestLoresteadStackLoresteadApi3200B40AGETprogress1E236F95": {
+   "Type": "AWS::Lambda::Permission",
+   "Properties": {
+    "Action": "lambda:InvokeFunction",
+    "FunctionName": {
+     "Fn::GetAtt": [
+      "ProgressHandler4C102255",
+      "Arn"
+     ]
+    },
+    "Principal": "apigateway.amazonaws.com",
+    "SourceArn": {
+     "Fn::Join": [
+      "",
+      [
+       "arn:aws:execute-api:ap-northeast-1:713386557346:",
+       {
+        "Ref": "LoresteadApiA0B9DC71"
+       },
+       "/test-invoke-stage/GET/progress"
+      ]
+     ]
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "LoresteadStack/LoresteadApi/Default/progress/GET/ApiPermission.Test.LoresteadStackLoresteadApi3200B40A.GET..progress"
+   }
+  },
+  "LoresteadApiprogressGETF65A2F8A": {
+   "Type": "AWS::ApiGateway::Method",
+   "Properties": {
+    "AuthorizationType": "NONE",
+    "HttpMethod": "GET",
+    "Integration": {
+     "IntegrationHttpMethod": "POST",
+     "Type": "AWS_PROXY",
+     "Uri": {
+      "Fn::Join": [
+       "",
+       [
+        "arn:aws:apigateway:ap-northeast-1:lambda:path/2015-03-31/functions/",
+        {
+         "Fn::GetAtt": [
+          "ProgressHandler4C102255",
+          "Arn"
+         ]
+        },
+        "/invocations"
+       ]
+      ]
+     }
+    },
+    "ResourceId": {
+     "Ref": "LoresteadApiprogress99C179AE"
+    },
+    "RestApiId": {
+     "Ref": "LoresteadApiA0B9DC71"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "LoresteadStack/LoresteadApi/Default/progress/GET/Resource"
+   }
+  },
+  "LoresteadApiprogressPUTApiPermissionLoresteadStackLoresteadApi3200B40APUTprogress3E2EE471": {
+   "Type": "AWS::Lambda::Permission",
+   "Properties": {
+    "Action": "lambda:InvokeFunction",
+    "FunctionName": {
+     "Fn::GetAtt": [
+      "ProgressHandler4C102255",
+      "Arn"
+     ]
+    },
+    "Principal": "apigateway.amazonaws.com",
+    "SourceArn": {
+     "Fn::Join": [
+      "",
+      [
+       "arn:aws:execute-api:ap-northeast-1:713386557346:",
+       {
+        "Ref": "LoresteadApiA0B9DC71"
+       },
+       "/",
+       {
+        "Ref": "LoresteadApiDeploymentStageprod1CDB6709"
+       },
+       "/PUT/progress"
+      ]
+     ]
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "LoresteadStack/LoresteadApi/Default/progress/PUT/ApiPermission.LoresteadStackLoresteadApi3200B40A.PUT..progress"
+   }
+  },
+  "LoresteadApiprogressPUTApiPermissionTestLoresteadStackLoresteadApi3200B40APUTprogressD84F1DD3": {
+   "Type": "AWS::Lambda::Permission",
+   "Properties": {
+    "Action": "lambda:InvokeFunction",
+    "FunctionName": {
+     "Fn::GetAtt": [
+      "ProgressHandler4C102255",
+      "Arn"
+     ]
+    },
+    "Principal": "apigateway.amazonaws.com",
+    "SourceArn": {
+     "Fn::Join": [
+      "",
+      [
+       "arn:aws:execute-api:ap-northeast-1:713386557346:",
+       {
+        "Ref": "LoresteadApiA0B9DC71"
+       },
+       "/test-invoke-stage/PUT/progress"
+      ]
+     ]
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "LoresteadStack/LoresteadApi/Default/progress/PUT/ApiPermission.Test.LoresteadStackLoresteadApi3200B40A.PUT..progress"
+   }
+  },
+  "LoresteadApiprogressPUT45D31B6D": {
+   "Type": "AWS::ApiGateway::Method",
+   "Properties": {
+    "AuthorizationType": "NONE",
+    "HttpMethod": "PUT",
+    "Integration": {
+     "IntegrationHttpMethod": "POST",
+     "Type": "AWS_PROXY",
+     "Uri": {
+      "Fn::Join": [
+       "",
+       [
+        "arn:aws:apigateway:ap-northeast-1:lambda:path/2015-03-31/functions/",
+        {
+         "Fn::GetAtt": [
+          "ProgressHandler4C102255",
+          "Arn"
+         ]
+        },
+        "/invocations"
+       ]
+      ]
+     }
+    },
+    "ResourceId": {
+     "Ref": "LoresteadApiprogress99C179AE"
+    },
+    "RestApiId": {
+     "Ref": "LoresteadApiA0B9DC71"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "LoresteadStack/LoresteadApi/Default/progress/PUT/Resource"
+   }
+  },
+  "CDKMetadata": {
+   "Type": "AWS::CDK::Metadata",
+   "Properties": {
+    "Analytics": "v2:deflate64:H4sIAAAAAAAA/+1XUW/bNhD+LeVjwWhtsoctb07qbkGTxbOdAYURBGfpLF9DkRx5iuEK+u8DScmWm3XoCmxo0DyJvO/Iu/vuSJ6Os+Mff8pevYCNP8qL+yNFy6yZMeT3Ejb+rslNqYlN1tx4dBNj1KIRdTf8DSoUp+KlkMKjWs2o1Dd2rGGpsBCn7GqUwlOpL/RIEXj04rQRWAGphLZSQM3mD3S02j7GLHi/Ma6YGEV5xCvSl6hLXndWHf5Zk8NLs0GXg8feaCe/sbaXr0D5PfCGSmL/ifZsWy2N8p1u8C3PTa15irl5QLcVp8dBtzIPoHqXhEMG0qK9lecr3VMk+8G5ItQ8YKzzuz7ABzRCzeu3ymwiU1Gr46D3Nchmzu44KlGjA8YZ5g659/3Am2SklcVWQ2WKZdbMQ4YWjeDwHVi34JiYjH6HkW69h3hrw3AmWimWpBTp8soUQTQZvb+bjKd30/HvN+PZXHyeI/nVFr1x/P34FLMXc9RKgiprpiamC7yvKyzOok3rSOdkQY1SlfYFFHXCglEeYojiVooKNJSYjhKFg7hoDmTbket0bwMnUBRzM+lN9B4umg5lhnx9oRVp3GHipfgC8J/3/fbQmItAp0ziEMkuyLkJyKPYH4uLYsbAWKFmf2D2WxDHEFN0rVRQLQvImre1jvWzaMSqGw6OiKs1026WpwIPwzXoQqHrZqgfyBkdjPULIzHppFCFpuauQKNr46F+ZHrA4H8BPof2FEP7PBhLuS/dWNboKvKejG6lP7kD75F9Ngof6U+yszq/Rz4Dj/0ecR+pTOmz5tKUvzhT20UjVDfcsRn8+EJhdKrfq5VgqQTGDWyzZoqeR5YWjXBpNMhWgSuoFZ8b5ycOV4rKNV/bEFhsDkAps7l2VFKYp7s/iK6Q16Y4EP2KUKBLora70ZI5+QatMtsqNSkF+tyR3T0bUoClXacV3qa9uh9WwNxcmpJyUBfFJ5fq9y6PZO9ZkzOGEiPVvWhQIxGUU/Smdjn2VXkrU0pTkUSoP7bMNmGdgDRj6WCQQDMomJrXxtHHcM6Hs4t+dS+K6+epj4m9A1h6h9tp6pKLXS/99/pSVNGlKXprtO9aDc/AtT/fXzmugyfgoELeledt23F5dbDLv91EPpP1f5HVXQPPdD8Vup8T9gQTFh+ItGD3Qiya8K+6b9Ms8HoCbt+cfTXa9wjRTNvuLR50SbGNCo8W6TIsuK7Z1txKbQrMPvgfHo5fZa9/zk5efPBER133mU3T9y/aFEZYeBIAAA=="
+   },
+   "Metadata": {
+    "aws:cdk:path": "LoresteadStack/CDKMetadata/Default"
+   }
+  }
+ },
+ "Outputs": {
+  "LoresteadApiEndpoint5A2E8FD4": {
+   "Value": {
+    "Fn::Join": [
+     "",
+     [
+      "https://",
+      {
+       "Ref": "LoresteadApiA0B9DC71"
+      },
+      ".execute-api.ap-northeast-1.",
+      {
+       "Ref": "AWS::URLSuffix"
+      },
+      "/",
+      {
+       "Ref": "LoresteadApiDeploymentStageprod1CDB6709"
+      },
+      "/"
+     ]
+    ]
+   }
+  },
+  "ApiUrl": {
+   "Value": {
+    "Fn::Join": [
+     "",
+     [
+      "https://",
+      {
+       "Ref": "LoresteadApiA0B9DC71"
+      },
+      ".execute-api.ap-northeast-1.",
+      {
+       "Ref": "AWS::URLSuffix"
+      },
+      "/",
+      {
+       "Ref": "LoresteadApiDeploymentStageprod1CDB6709"
+      },
+      "/"
+     ]
+    ]
+   },
+   "Export": {
+    "Name": "LoresteadApiUrl"
+   }
+  },
+  "UserPoolId": {
+   "Value": {
+    "Ref": "LoresteadUserPoolE9139610"
+   },
+   "Export": {
+    "Name": "LoresteadUserPoolId"
+   }
+  },
+  "UserPoolClientId": {
+   "Value": {
+    "Ref": "LoresteadUserPoolClient797ADD80"
+   },
+   "Export": {
+    "Name": "LoresteadUserPoolClientId"
+   }
+  }
+ },
+ "Parameters": {
+  "BootstrapVersion": {
+   "Type": "AWS::SSM::Parameter::Value<String>",
+   "Default": "/cdk-bootstrap/hnb659fds/version",
+   "Description": "Version of the CDK Bootstrap resources in this environment, automatically retrieved from SSM Parameter Store. [cdk:skip]"
+  }
+ },
+ "Rules": {
+  "CheckBootstrapVersion": {
+   "Assertions": [
+    {
+     "Assert": {
+      "Fn::Not": [
+       {
+        "Fn::Contains": [
+         [
+          "1",
+          "2",
+          "3",
+          "4",
+          "5"
+         ],
+         {
+          "Ref": "BootstrapVersion"
+         }
+        ]
+       }
+      ]
+     },
+     "AssertDescription": "CDK bootstrap stack version 6 required. Please run 'cdk bootstrap' with a recent version of the CDK CLI."
+    }
+   ]
+  }
+ }
+}
