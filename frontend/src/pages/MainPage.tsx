@@ -33,14 +33,14 @@ export function MainPage() {
       </div>
 
       {/* App name */}
-      <div className="absolute top-6 left-6 pointer-events-none">
+      <div className="absolute top-6 left-6 pointer-events-none" style={{ zIndex: 50 }}>
         <p className="text-white/20 text-xs tracking-[0.3em] uppercase">Lorestead</p>
       </div>
 
       {/* Draggable timer */}
       <div
         className="absolute cursor-grab active:cursor-grabbing"
-        style={{ left: pos.x, top: pos.y, touchAction: 'none' }}
+        style={{ left: pos.x, top: pos.y, touchAction: 'none', zIndex: 50 }}
         onMouseDown={onMouseDown}
         onTouchStart={onTouchStart}
       >
