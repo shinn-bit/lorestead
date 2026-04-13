@@ -23,7 +23,7 @@ export function WorldPlayer({ stage, isActive }: Props) {
   const prevStageRef = useRef(0); // 0 = 未初期化
   const cleanupRef = useRef<(() => void) | null>(null);
 
-  // ---------- 初期化（Stage 1: start → loop） ----------
+  // ---------- 初期化（最初からループ再生） ----------
   useEffect(() => {
     const vidA = videoARef.current;
     if (!vidA) return;
@@ -31,22 +31,10 @@ export function WorldPlayer({ stage, isActive }: Props) {
     const config = getVideoConfig(1);
     prevStageRef.current = 1;
 
-    const startLoop = () => {
-      vidA.src = config.loopSrc;
-      vidA.loop = true;
-      vidA.load();
-      vidA.addEventListener('canplay', () => vidA.play().catch(() => {}), { once: true });
-    };
-
-    if (config.startSrc) {
-      vidA.src = config.startSrc;
-      vidA.loop = false;
-      vidA.load();
-      vidA.addEventListener('canplay', () => vidA.play().catch(() => {}), { once: true });
-      vidA.addEventListener('ended', startLoop, { once: true });
-    } else {
-      startLoop();
-    }
+    vidA.src = config.loopSrc;
+    vidA.loop = true;
+    vidA.load();
+    vidA.addEventListener('canplay', () => vidA.play().catch(() => {}), { once: true });
 
     // Stage 2 を先読み
     const next = getVideoConfig(2);

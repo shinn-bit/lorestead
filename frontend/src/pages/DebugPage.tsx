@@ -22,7 +22,7 @@ export function DebugPage() {
       </div>
 
       {/* Debug panel */}
-      <div className="absolute inset-0 flex pointer-events-none">
+      <div className="absolute inset-0 flex pointer-events-none" style={{ zIndex: 50 }}>
         <div
           className="flex flex-col gap-4 p-5 m-4 rounded-2xl overflow-y-auto pointer-events-auto"
           style={{
