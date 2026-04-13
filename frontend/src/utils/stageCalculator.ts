@@ -36,7 +36,7 @@ export function getVideoConfig(stage: number): VideoConfig {
     };
   }
   const pad = String(stage).padStart(2, '0');
-  return { loopSrc: `${base}/stage_0${pad}.mp4` };
+  return { loopSrc: `${base}/stage_${pad}.mp4` };
 }
 
 export function getNextStageMinutes(currentStage: number): number | null {
