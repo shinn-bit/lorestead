@@ -1,8 +1,7 @@
+import { useRef } from 'react';
 import { useTimer } from '../hooks/useTimer';
-import { useVisibility } from '../hooks/useVisibility';
 import { getCurrentStage, STAGE_THRESHOLDS } from '../utils/stageCalculator';
 import { WorldPlayer } from '../components/World/WorldPlayer';
-import { useRef } from 'react';
 
 function formatMinutes(minutes: number): string {
   const h = Math.floor(minutes / 60);
@@ -11,32 +10,21 @@ function formatMinutes(minutes: number): string {
 }
 
 export function DebugPage() {
-  const {
-    isRunning,
-    elapsedSeconds,
-    totalMinutes,
-    start,
-    pause,
-    reset,
-    debugSetMinutes,
-  } = useTimer();
-
-  const { isActive } = useVisibility();
+  const { isRunning, elapsedSeconds, totalMinutes, start, pause, reset, debugSetMinutes } = useTimer();
   const stage = getCurrentStage(totalMinutes);
   const inputRef = useRef<HTMLInputElement>(null);
 
   return (
     <div className="relative w-full h-dvh overflow-hidden bg-black">
-      {/* World */}
+      {/* World - debug page では常に明るく表示 */}
       <div className="absolute inset-0">
-        <WorldPlayer stage={stage} isActive={isActive && isRunning} />
+        <WorldPlayer stage={stage} isActive={true} />
       </div>
 
-      {/* Debug overlay */}
-      <div className="absolute inset-0 flex">
-        {/* Left panel */}
+      {/* Debug panel */}
+      <div className="absolute inset-0 flex pointer-events-none">
         <div
-          className="flex flex-col gap-4 p-5 m-4 rounded-2xl overflow-y-auto"
+          className="flex flex-col gap-4 p-5 m-4 rounded-2xl overflow-y-auto pointer-events-auto"
           style={{
             background: 'rgba(0,0,0,0.82)',
             backdropFilter: 'blur(20px)',
@@ -45,18 +33,24 @@ export function DebugPage() {
             maxHeight: 'calc(100dvh - 32px)',
           }}
         >
+          {/* Header */}
           <div className="flex items-center gap-2">
             <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
-            <span className="text-red-400 text-xs font-mono uppercase tracking-widest">Debug Mode</span>
+            <span className="text-red-400 text-xs font-mono uppercase tracking-widest">Debug</span>
           </div>
 
-          {/* Current state */}
+          {/* State readout */}
           <div className="rounded-xl p-3 text-xs font-mono" style={{ background: 'rgba(255,255,255,0.05)' }}>
-            <p className="text-white/40 mb-1">Status</p>
-            <p className="text-white">Stage <span className="text-red-400">{stage}</span> / 9</p>
+            <p className="text-white/40 mb-1">Current state</p>
+            <p className="text-white">
+              Stage <span className="text-red-400 font-bold">{stage}</span> / 9
+            </p>
             <p className="text-white">{totalMinutes.toFixed(1)} min total</p>
-            <p className="text-white">{String(Math.floor(elapsedSeconds / 60)).padStart(2,'0')}:{String(elapsedSeconds % 60).padStart(2,'0')} session</p>
-            <p className="text-white/40 mt-1">{isRunning ? '▶ running' : '⏸ paused'}</p>
+            <p className="text-white">
+              {String(Math.floor(elapsedSeconds / 60)).padStart(2, '0')}:
+              {String(elapsedSeconds % 60).padStart(2, '0')} session
+            </p>
+            <p className="text-white/40 mt-1">{isRunning ? '▶ running' : '⏸ stopped'}</p>
           </div>
 
           {/* Timer controls */}
@@ -64,7 +58,10 @@ export function DebugPage() {
             <button
               onClick={isRunning ? pause : start}
               className="flex-1 py-2 rounded-lg text-xs transition-all"
-              style={{ background: isRunning ? 'rgba(255,255,255,0.1)' : 'rgba(255,255,255,0.85)', color: isRunning ? '#fff' : '#000' }}
+              style={{
+                background: isRunning ? 'rgba(255,255,255,0.1)' : 'rgba(255,255,255,0.85)',
+                color: isRunning ? '#fff' : '#000',
+              }}
             >
               {isRunning ? 'Pause' : 'Start'}
             </button>
@@ -77,33 +74,30 @@ export function DebugPage() {
             </button>
           </div>
 
-          {/* Stage jump buttons */}
+          {/* Stage jump */}
           <div>
             <p className="text-white/30 text-xs mb-2 uppercase tracking-widest">Jump to Stage</p>
             <div className="flex flex-col gap-1">
-              {STAGE_THRESHOLDS.map((t) => {
-                const isCurrentStage = stage === t.stage;
-                return (
-                  <button
-                    key={t.stage}
-                    onClick={() => debugSetMinutes(t.minutes)}
-                    className="flex items-center justify-between px-3 py-2 rounded-lg text-left transition-all text-xs"
-                    style={{
-                      background: isCurrentStage ? 'rgba(255,60,60,0.2)' : 'rgba(255,255,255,0.05)',
-                      border: isCurrentStage ? '1px solid rgba(255,60,60,0.5)' : '1px solid transparent',
-                    }}
-                  >
-                    <span className="text-white/70">Stage {t.stage}</span>
-                    <span className="text-white/30 font-mono">
-                      {t.minutes === 0 ? '0h' : formatMinutes(t.minutes)}
-                    </span>
-                  </button>
-                );
-              })}
+              {STAGE_THRESHOLDS.map((t) => (
+                <button
+                  key={t.stage}
+                  onClick={() => debugSetMinutes(t.minutes)}
+                  className="flex items-center justify-between px-3 py-2 rounded-lg text-xs transition-all"
+                  style={{
+                    background: stage === t.stage ? 'rgba(255,60,60,0.2)' : 'rgba(255,255,255,0.05)',
+                    border: stage === t.stage ? '1px solid rgba(255,60,60,0.5)' : '1px solid transparent',
+                  }}
+                >
+                  <span className="text-white/70">Stage {t.stage}</span>
+                  <span className="text-white/30 font-mono">
+                    {t.minutes === 0 ? '0h' : formatMinutes(t.minutes)}
+                  </span>
+                </button>
+              ))}
             </div>
           </div>
 
-          {/* Custom minutes */}
+          {/* Custom minutes input */}
           <div>
             <p className="text-white/30 text-xs mb-2 uppercase tracking-widest">Custom minutes</p>
             <div className="flex gap-2">
@@ -135,7 +129,6 @@ export function DebugPage() {
             </div>
           </div>
 
-          {/* Back link */}
           <a
             href="/"
             className="text-xs text-white/20 hover:text-white/50 transition-colors text-center mt-auto"
