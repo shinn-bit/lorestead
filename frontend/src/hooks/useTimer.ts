@@ -78,6 +78,16 @@ export function useTimer() {
     baselineMinutesRef.current = 0;
   }, []);
 
+  // Debug: jump to arbitrary total minutes
+  const debugSetMinutes = useCallback((minutes: number) => {
+    setIsRunning(false);
+    setElapsedSeconds(0);
+    runStartElapsedRef.current = 0;
+    setTotalMinutes(minutes);
+    saveMinutes(minutes);
+    baselineMinutesRef.current = minutes;
+  }, []);
+
   return {
     isRunning,
     elapsedSeconds,
@@ -88,5 +98,6 @@ export function useTimer() {
     pause,
     reset,
     resetAll,
+    debugSetMinutes,
   };
 }
