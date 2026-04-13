@@ -21,19 +21,19 @@ export function getCurrentStage(totalMinutes: number): number {
 }
 
 export interface VideoConfig {
-  /** 最初に1回だけ流す動画（stage 1 のみ） */
-  startSrc?: string;
-  /** ループ再生する動画 */
-  loopSrc: string;
+  /** ループ再生する動画（stage 9 以外） */
+  loopSrc?: string;
+  /** 静止画（stage 9） */
+  imageSrc?: string;
 }
 
 export function getVideoConfig(stage: number): VideoConfig {
   const base = '/assets/worlds/prague';
+  if (stage === 9) {
+    return { imageSrc: `${base}/stage_09.png` };
+  }
   if (stage === 1) {
-    return {
-      startSrc: `${base}/stage_01_start.mp4`,
-      loopSrc: `${base}/stage_01_loop.mp4`,
-    };
+    return { loopSrc: `${base}/stage_01_loop.mp4` };
   }
   const pad = String(stage).padStart(2, '0');
   return { loopSrc: `${base}/stage_${pad}.mp4` };
