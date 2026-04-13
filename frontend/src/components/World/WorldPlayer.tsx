@@ -6,108 +6,133 @@ interface Props {
   isActive: boolean;
 }
 
-const FADE_MS = 800;
+const FADE_MS = 700;
 
 export function WorldPlayer({ stage, isActive }: Props) {
-  // A/B 2枚のvideoを常にDOMに保持し、opacityでクロスフェード
   const videoARef = useRef<HTMLVideoElement>(null);
   const videoBRef = useRef<HTMLVideoElement>(null);
+  const preloadRef = useRef<HTMLVideoElement>(null);
 
-  // true = A が前面, false = B が前面
-  const [aIsFront, setAIsFront] = useState(true);
-  const [aOpacity, setAOpacity] = useState(1);
-  const [bOpacity, setBOpacity] = useState(0);
+  // A/B どちらが「前面（表示中）」か
+  const aIsFrontRef = useRef(true);
 
-  const prevStageRef = useRef<number>(-1);
-  // stage 1 の start 動画を再生したかどうか
-  const startPlayedRef = useRef(false);
+  // z-index: 前面=10, 背面(フェードイン中)=20, 完全非表示=0
+  const [aStyle, setAStyle] = useState<React.CSSProperties>({ opacity: 1, zIndex: 10 });
+  const [bStyle, setBStyle] = useState<React.CSSProperties>({ opacity: 0, zIndex: 0 });
 
-  const backRef = () => (aIsFront ? videoBRef : videoARef);
+  const prevStageRef = useRef(0); // 0 = 未初期化
+  const cleanupRef = useRef<(() => void) | null>(null);
 
-  // 初回マウント: stage 1 の start 動画を A に流す
+  // ---------- 初期化（Stage 1: start → loop） ----------
   useEffect(() => {
+    const vidA = videoARef.current;
+    if (!vidA) return;
+
     const config = getVideoConfig(1);
-    const vid = videoARef.current;
-    if (!vid) return;
+    prevStageRef.current = 1;
 
-    if (config.startSrc && !startPlayedRef.current) {
-      startPlayedRef.current = true;
-      vid.src = config.startSrc;
-      vid.loop = false;
-      vid.load();
-      vid.play().catch(() => {});
+    const startLoop = () => {
+      vidA.src = config.loopSrc;
+      vidA.loop = true;
+      vidA.load();
+      vidA.addEventListener('canplay', () => vidA.play().catch(() => {}), { once: true });
+    };
 
-      vid.onended = () => {
-        vid.src = config.loopSrc;
-        vid.loop = true;
-        vid.load();
-        vid.play().catch(() => {});
-        vid.onended = null;
-      };
+    if (config.startSrc) {
+      vidA.src = config.startSrc;
+      vidA.loop = false;
+      vidA.load();
+      vidA.addEventListener('canplay', () => vidA.play().catch(() => {}), { once: true });
+      vidA.addEventListener('ended', startLoop, { once: true });
     } else {
-      vid.src = config.loopSrc;
-      vid.loop = true;
-      vid.load();
-      vid.play().catch(() => {});
+      startLoop();
     }
 
-    prevStageRef.current = 1;
+    // Stage 2 を先読み
+    const next = getVideoConfig(2);
+    if (preloadRef.current) {
+      preloadRef.current.src = next.loopSrc;
+      preloadRef.current.load();
+    }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // stage が変わったらクロスフェード
+  // ---------- Stage 変化 → canplay 待ちクロスフェード ----------
   useEffect(() => {
-    if (prevStageRef.current === stage || prevStageRef.current === -1) return;
+    if (prevStageRef.current === 0 || prevStageRef.current === stage) return;
     prevStageRef.current = stage;
 
+    // 前回の crossfade cleanup
+    cleanupRef.current?.();
+
+    const isFrontA = aIsFrontRef.current;
+    const front = isFrontA ? videoARef.current : videoBRef.current;
+    const back  = isFrontA ? videoBRef.current : videoARef.current;
+    if (!front || !back) return;
+
     const config = getVideoConfig(stage);
-    const back = backRef().current;
-    if (!back) return;
 
     // バック側に新しい動画をセット
     back.src = config.loopSrc;
     back.loop = true;
     back.load();
-    back.play().catch(() => {});
 
-    // フェードアニメーション
-    if (aIsFront) {
-      setBOpacity(1);
-      setTimeout(() => {
-        setAOpacity(0);
-        setAIsFront(false);
-      }, FADE_MS);
-    } else {
-      setAOpacity(1);
-      setTimeout(() => {
-        setBOpacity(0);
-        setAIsFront(true);
-      }, FADE_MS);
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [stage]);
+    let cancelled = false;
+    let timer: ReturnType<typeof setTimeout> | null = null;
 
-  // アクティブ状態で再生速度・明るさを変える
-  useEffect(() => {
-    const update = (vid: HTMLVideoElement | null) => {
-      if (!vid) return;
-      vid.playbackRate = isActive ? 1.0 : 0.3;
+    const onCanPlay = () => {
+      if (cancelled) return;
+      back.play().catch(() => {});
+
+      // バックを前面に持ってきてフェードイン、フロントをフェードアウト
+      if (isFrontA) {
+        setBStyle({ opacity: 1, zIndex: 20, transition: `opacity ${FADE_MS}ms ease` });
+        setAStyle({ opacity: 0, zIndex: 10, transition: `opacity ${FADE_MS}ms ease` });
+      } else {
+        setAStyle({ opacity: 1, zIndex: 20, transition: `opacity ${FADE_MS}ms ease` });
+        setBStyle({ opacity: 0, zIndex: 10, transition: `opacity ${FADE_MS}ms ease` });
+      }
+
+      // フェード完了後に z-index を確定
+      timer = setTimeout(() => {
+        if (cancelled) return;
+        aIsFrontRef.current = !isFrontA;
+        if (!isFrontA) {
+          // A が新フロント
+          setAStyle({ opacity: 1, zIndex: 10 });
+          setBStyle({ opacity: 0, zIndex: 0 });
+        } else {
+          // B が新フロント
+          setBStyle({ opacity: 1, zIndex: 10 });
+          setAStyle({ opacity: 0, zIndex: 0 });
+        }
+        // 次ステージを先読み
+        const next = getVideoConfig(stage + 1);
+        if (preloadRef.current && next) {
+          preloadRef.current.src = next.loopSrc;
+          preloadRef.current.load();
+        }
+      }, FADE_MS + 50);
     };
-    update(videoARef.current);
-    update(videoBRef.current);
-  }, [isActive]);
 
-  // 次のステージの動画を先読み
-  useEffect(() => {
-    const nextConfig = getVideoConfig(stage + 1);
-    if (!nextConfig) return;
-    const link = document.createElement('link');
-    link.rel = 'preload';
-    link.as = 'video';
-    link.href = nextConfig.loopSrc;
-    document.head.appendChild(link);
-    return () => { document.head.removeChild(link); };
+    back.addEventListener('canplay', onCanPlay, { once: true });
+
+    cleanupRef.current = () => {
+      cancelled = true;
+      back.removeEventListener('canplay', onCanPlay);
+      if (timer) clearTimeout(timer);
+    };
+
+    return () => { cleanupRef.current?.(); };
   }, [stage]);
+
+  // ---------- アクティブ状態 ----------
+  useEffect(() => {
+    [videoARef, videoBRef].forEach((ref) => {
+      if (!ref.current) return;
+      ref.current.playbackRate = isActive ? 1.0 : 0.3;
+    });
+  }, [isActive]);
 
   const brightness = isActive ? 'brightness(1)' : 'brightness(0.45)';
 
@@ -115,31 +140,23 @@ export function WorldPlayer({ stage, isActive }: Props) {
     <div className="relative w-full h-full bg-black overflow-hidden">
       <video
         ref={videoARef}
-        autoPlay
         muted
         playsInline
         className="absolute inset-0 w-full h-full object-cover"
-        style={{
-          opacity: aOpacity,
-          transition: `opacity ${FADE_MS}ms ease`,
-          filter: brightness,
-        }}
+        style={{ ...aStyle, filter: brightness }}
       />
       <video
         ref={videoBRef}
-        autoPlay
         muted
         playsInline
         className="absolute inset-0 w-full h-full object-cover"
-        style={{
-          opacity: bOpacity,
-          transition: `opacity ${FADE_MS}ms ease`,
-          filter: brightness,
-        }}
+        style={{ ...bStyle, filter: brightness }}
       />
+      {/* 先読み専用 (非表示) */}
+      <video ref={preloadRef} muted playsInline preload="auto" className="hidden" />
 
       {!isActive && (
-        <div className="absolute inset-0 flex items-center justify-center">
+        <div className="absolute inset-0 flex items-center justify-center" style={{ zIndex: 30 }}>
           <p className="text-white/30 text-xs tracking-[0.25em] uppercase font-light">Paused</p>
         </div>
       )}
