@@ -31,36 +31,49 @@ export function WorldPlayer({ stage, isActive }: Props) {
     const config = getVideoConfig(1);
     prevStageRef.current = 1;
 
-    vidA.src = config.loopSrc;
-    vidA.loop = true;
-    vidA.load();
-    vidA.addEventListener('canplay', () => vidA.play().catch(() => {}), { once: true });
+    if (config.loopSrc) {
+      vidA.src = config.loopSrc;
+      vidA.loop = true;
+      vidA.load();
+      vidA.addEventListener('canplay', () => vidA.play().catch(() => {}), { once: true });
+    }
 
     // Stage 2 を先読み
     const next = getVideoConfig(2);
-    if (preloadRef.current) {
+    if (preloadRef.current && next.loopSrc) {
       preloadRef.current.src = next.loopSrc;
       preloadRef.current.load();
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // stage 9 の静止画オーバーレイ
+  const [imageOpacity, setImageOpacity] = useState(0);
+  const imageConfig = getVideoConfig(9);
+
   // ---------- Stage 変化 → canplay 待ちクロスフェード ----------
   useEffect(() => {
     if (prevStageRef.current === 0 || prevStageRef.current === stage) return;
     prevStageRef.current = stage;
 
-    // 前回の crossfade cleanup
     cleanupRef.current?.();
 
+    // Stage 9 → 静止画をフェードイン
+    if (stage === 9) {
+      setImageOpacity(1);
+      return;
+    }
+
+    // Stage 9 から戻る場合（デバッグ用）
+    setImageOpacity(0);
+
     const isFrontA = aIsFrontRef.current;
-    const front = isFrontA ? videoARef.current : videoBRef.current;
-    const back  = isFrontA ? videoBRef.current : videoARef.current;
-    if (!front || !back) return;
+    const back = isFrontA ? videoBRef.current : videoARef.current;
+    if (!back) return;
 
     const config = getVideoConfig(stage);
+    if (!config.loopSrc) return;
 
-    // バック側に新しい動画をセット
     back.src = config.loopSrc;
     back.loop = true;
     back.load();
@@ -72,7 +85,6 @@ export function WorldPlayer({ stage, isActive }: Props) {
       if (cancelled) return;
       back.play().catch(() => {});
 
-      // バックを前面に持ってきてフェードイン、フロントをフェードアウト
       if (isFrontA) {
         setBStyle({ opacity: 1, zIndex: 20, transition: `opacity ${FADE_MS}ms ease` });
         setAStyle({ opacity: 0, zIndex: 10, transition: `opacity ${FADE_MS}ms ease` });
@@ -81,22 +93,18 @@ export function WorldPlayer({ stage, isActive }: Props) {
         setBStyle({ opacity: 0, zIndex: 10, transition: `opacity ${FADE_MS}ms ease` });
       }
 
-      // フェード完了後に z-index を確定
       timer = setTimeout(() => {
         if (cancelled) return;
         aIsFrontRef.current = !isFrontA;
         if (!isFrontA) {
-          // A が新フロント
           setAStyle({ opacity: 1, zIndex: 10 });
           setBStyle({ opacity: 0, zIndex: 0 });
         } else {
-          // B が新フロント
           setBStyle({ opacity: 1, zIndex: 10 });
           setAStyle({ opacity: 0, zIndex: 0 });
         }
-        // 次ステージを先読み
         const next = getVideoConfig(stage + 1);
-        if (preloadRef.current && next) {
+        if (preloadRef.current && next.loopSrc) {
           preloadRef.current.src = next.loopSrc;
           preloadRef.current.load();
         }
@@ -140,6 +148,20 @@ export function WorldPlayer({ stage, isActive }: Props) {
         className="absolute inset-0 w-full h-full object-cover"
         style={{ ...bStyle, filter: brightness }}
       />
+      {/* Stage 9: 静止画オーバーレイ */}
+      {imageConfig.imageSrc && (
+        <img
+          src={imageConfig.imageSrc}
+          alt="Prague complete"
+          className="absolute inset-0 w-full h-full object-cover"
+          style={{
+            opacity: imageOpacity,
+            transition: `opacity ${FADE_MS}ms ease`,
+            zIndex: 15,
+          }}
+        />
+      )}
+
       {/* 先読み専用 (非表示) */}
       <video ref={preloadRef} muted playsInline preload="auto" className="hidden" />
 
