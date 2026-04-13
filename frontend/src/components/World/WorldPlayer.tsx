@@ -6,112 +6,141 @@ interface Props {
   isActive: boolean;
 }
 
-type VideoPhase = 'start' | 'loop';
+const FADE_MS = 800;
 
 export function WorldPlayer({ stage, isActive }: Props) {
-  const config = getVideoConfig(stage);
+  // A/B 2枚のvideoを常にDOMに保持し、opacityでクロスフェード
+  const videoARef = useRef<HTMLVideoElement>(null);
+  const videoBRef = useRef<HTMLVideoElement>(null);
 
-  const [videoPhase, setVideoPhase] = useState<VideoPhase>(
-    stage === 1 && config.startSrc ? 'start' : 'loop'
-  );
+  // true = A が前面, false = B が前面
+  const [aIsFront, setAIsFront] = useState(true);
+  const [aOpacity, setAOpacity] = useState(1);
+  const [bOpacity, setBOpacity] = useState(0);
 
-  // 現在再生中のsrc
-  const [currentSrc, setCurrentSrc] = useState<string>(
-    stage === 1 && config.startSrc ? config.startSrc : config.loopSrc
-  );
-  const [nextSrc, setNextSrc] = useState<string | null>(null);
-  const [fading, setFading] = useState(false);
+  const prevStageRef = useRef<number>(-1);
+  // stage 1 の start 動画を再生したかどうか
+  const startPlayedRef = useRef(false);
 
-  const currentRef = useRef<HTMLVideoElement>(null);
-  const nextRef = useRef<HTMLVideoElement>(null);
-  const prevStageRef = useRef(stage);
+  const backRef = () => (aIsFront ? videoBRef : videoARef);
+
+  // 初回マウント: stage 1 の start 動画を A に流す
+  useEffect(() => {
+    const config = getVideoConfig(1);
+    const vid = videoARef.current;
+    if (!vid) return;
+
+    if (config.startSrc && !startPlayedRef.current) {
+      startPlayedRef.current = true;
+      vid.src = config.startSrc;
+      vid.loop = false;
+      vid.load();
+      vid.play().catch(() => {});
+
+      vid.onended = () => {
+        vid.src = config.loopSrc;
+        vid.loop = true;
+        vid.load();
+        vid.play().catch(() => {});
+        vid.onended = null;
+      };
+    } else {
+      vid.src = config.loopSrc;
+      vid.loop = true;
+      vid.load();
+      vid.play().catch(() => {});
+    }
+
+    prevStageRef.current = 1;
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // stage が変わったらクロスフェード
   useEffect(() => {
-    if (stage === prevStageRef.current) return;
+    if (prevStageRef.current === stage || prevStageRef.current === -1) return;
     prevStageRef.current = stage;
 
-    const newConfig = getVideoConfig(stage);
-    const target = newConfig.loopSrc;
-    setNextSrc(target);
-    setFading(true);
+    const config = getVideoConfig(stage);
+    const back = backRef().current;
+    if (!back) return;
 
-    const timeout = setTimeout(() => {
-      setCurrentSrc(target);
-      setNextSrc(null);
-      setFading(false);
-      setVideoPhase('loop');
-    }, 800);
+    // バック側に新しい動画をセット
+    back.src = config.loopSrc;
+    back.loop = true;
+    back.load();
+    back.play().catch(() => {});
 
-    return () => clearTimeout(timeout);
+    // フェードアニメーション
+    if (aIsFront) {
+      setBOpacity(1);
+      setTimeout(() => {
+        setAOpacity(0);
+        setAIsFront(false);
+      }, FADE_MS);
+    } else {
+      setAOpacity(1);
+      setTimeout(() => {
+        setBOpacity(0);
+        setAIsFront(true);
+      }, FADE_MS);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [stage]);
 
-  // start 動画が終わったら loop に切り替える
-  const handleStartEnded = () => {
-    if (videoPhase === 'start' && config.loopSrc) {
-      setVideoPhase('loop');
-      setCurrentSrc(config.loopSrc);
-    }
-  };
-
-  // アクティブ状態による動画演出
+  // アクティブ状態で再生速度・明るさを変える
   useEffect(() => {
-    const vid = currentRef.current;
-    if (!vid) return;
-    if (isActive) {
-      vid.playbackRate = 1.0;
-    } else {
-      vid.playbackRate = 0.3;
-    }
+    const update = (vid: HTMLVideoElement | null) => {
+      if (!vid) return;
+      vid.playbackRate = isActive ? 1.0 : 0.3;
+    };
+    update(videoARef.current);
+    update(videoBRef.current);
   }, [isActive]);
 
-  const isLoop = videoPhase === 'loop';
+  // 次のステージの動画を先読み
+  useEffect(() => {
+    const nextConfig = getVideoConfig(stage + 1);
+    if (!nextConfig) return;
+    const link = document.createElement('link');
+    link.rel = 'preload';
+    link.as = 'video';
+    link.href = nextConfig.loopSrc;
+    document.head.appendChild(link);
+    return () => { document.head.removeChild(link); };
+  }, [stage]);
+
+  const brightness = isActive ? 'brightness(1)' : 'brightness(0.45)';
 
   return (
-    <div className="relative w-full h-full bg-black">
-      {/* 現在の動画 */}
+    <div className="relative w-full h-full bg-black overflow-hidden">
       <video
-        ref={currentRef}
-        key={currentSrc}
-        src={currentSrc}
+        ref={videoARef}
         autoPlay
         muted
         playsInline
-        loop={isLoop}
-        onEnded={isLoop ? undefined : handleStartEnded}
         className="absolute inset-0 w-full h-full object-cover"
         style={{
-          opacity: fading ? 0 : 1,
-          transition: 'opacity 0.8s ease',
-          filter: isActive ? 'brightness(1)' : 'brightness(0.5)',
+          opacity: aOpacity,
+          transition: `opacity ${FADE_MS}ms ease`,
+          filter: brightness,
+        }}
+      />
+      <video
+        ref={videoBRef}
+        autoPlay
+        muted
+        playsInline
+        className="absolute inset-0 w-full h-full object-cover"
+        style={{
+          opacity: bOpacity,
+          transition: `opacity ${FADE_MS}ms ease`,
+          filter: brightness,
         }}
       />
 
-      {/* 次の動画（クロスフェード用） */}
-      {nextSrc && (
-        <video
-          ref={nextRef}
-          key={nextSrc}
-          src={nextSrc}
-          autoPlay
-          muted
-          playsInline
-          loop
-          className="absolute inset-0 w-full h-full object-cover"
-          style={{
-            opacity: fading ? 1 : 0,
-            transition: 'opacity 0.8s ease',
-          }}
-        />
-      )}
-
-      {/* 非アクティブ時のオーバーレイ */}
       {!isActive && (
-        <div
-          className="absolute inset-0 flex items-center justify-center"
-          style={{ background: 'rgba(0,0,0,0.3)' }}
-        >
-          <p className="text-white/50 text-sm tracking-widest uppercase">Paused</p>
+        <div className="absolute inset-0 flex items-center justify-center">
+          <p className="text-white/30 text-xs tracking-[0.25em] uppercase font-light">Paused</p>
         </div>
       )}
     </div>

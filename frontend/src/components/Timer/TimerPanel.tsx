@@ -12,15 +12,6 @@ interface Props {
   onActivityChange: (type: ActivityType) => void;
 }
 
-const ACTIVITY_LABELS: Record<ActivityType, string> = {
-  study: 'Study',
-  work: 'Work',
-  creative: 'Creative',
-  other: 'Other',
-};
-
-const ACTIVITY_TYPES: ActivityType[] = ['study', 'work', 'creative', 'other'];
-
 function formatTime(seconds: number): string {
   const h = Math.floor(seconds / 3600);
   const m = Math.floor((seconds % 3600) / 60);
@@ -35,16 +26,7 @@ function formatMinutes(minutes: number): string {
   return h > 0 ? `${h}h ${m}m` : `${m}m`;
 }
 
-export function TimerPanel({
-  isRunning,
-  elapsedSeconds,
-  totalMinutes,
-  activityType,
-  onStart,
-  onPause,
-  onReset,
-  onActivityChange,
-}: Props) {
+export function TimerPanel({ isRunning, elapsedSeconds, totalMinutes, onStart, onPause, onReset }: Props) {
   const stage = getCurrentStage(totalMinutes);
   const progress = getProgressToNextStage(totalMinutes);
   const isCompleted = stage >= 9;
@@ -52,91 +34,78 @@ export function TimerPanel({
 
   return (
     <div
-      className="flex flex-col gap-4 p-6 rounded-2xl"
+      className="flex flex-col gap-4 p-5 rounded-2xl select-none"
       style={{
-        background: 'rgba(0,0,0,0.6)',
-        backdropFilter: 'blur(16px)',
-        border: '1px solid rgba(255,255,255,0.1)',
-        minWidth: 280,
+        background: 'rgba(8,8,12,0.72)',
+        backdropFilter: 'blur(20px)',
+        border: '1px solid rgba(255,255,255,0.08)',
+        boxShadow: '0 8px 40px rgba(0,0,0,0.6)',
+        width: 260,
       }}
     >
-      {/* Stage badge */}
-      <div className="flex items-center justify-between">
-        <span className="text-xs uppercase tracking-widest text-white/40">Prague</span>
-        <span className="text-xs text-white/60">
-          Stage {stage} / 9
-        </span>
+      {/* Drag handle hint */}
+      <div className="flex justify-center -mt-1 mb-1 cursor-grab active:cursor-grabbing">
+        <div className="w-8 h-1 rounded-full bg-white/15" />
       </div>
 
-      {/* Stage progress bar */}
+      {/* Stage info */}
+      <div className="flex items-center justify-between text-xs">
+        <span className="text-white/30 uppercase tracking-widest">Prague</span>
+        {isCompleted
+          ? <span className="text-amber-400">Complete!</span>
+          : <span className="text-white/40">Stage {stage} / 9</span>
+        }
+      </div>
+
+      {/* Progress bar */}
       {!isCompleted && (
         <div>
-          <div className="h-1 rounded-full bg-white/10 overflow-hidden">
+          <div className="h-[3px] rounded-full bg-white/10 overflow-hidden">
             <div
-              className="h-full rounded-full bg-white/60 transition-all duration-1000"
+              className="h-full rounded-full bg-white/50 transition-all duration-1000"
               style={{ width: `${progress * 100}%` }}
             />
           </div>
           {nextThreshold && (
-            <p className="text-xs text-white/30 mt-1 text-right">
-              Next: {formatMinutes(nextThreshold.minutes - totalMinutes)} left
+            <p className="text-[11px] text-white/25 mt-1 text-right">
+              Next stage in {formatMinutes(nextThreshold.minutes - totalMinutes)}
             </p>
           )}
         </div>
       )}
 
-      {isCompleted && (
-        <p className="text-xs text-amber-400 tracking-wider text-center">City Complete!</p>
-      )}
-
       {/* Session timer */}
-      <div className="text-center">
-        <p className="text-5xl font-light tabular-nums text-white tracking-tight">
+      <div className="text-center py-1">
+        <p className="text-[42px] font-thin tabular-nums text-white leading-none tracking-tight">
           {formatTime(elapsedSeconds)}
         </p>
-        <p className="text-xs text-white/40 mt-1">Total: {formatMinutes(totalMinutes)}</p>
+        <p className="text-xs text-white/25 mt-2">Total {formatMinutes(totalMinutes)} focused</p>
       </div>
 
-      {/* Activity type */}
-      <div className="flex gap-2 justify-center flex-wrap">
-        {ACTIVITY_TYPES.map((type) => (
-          <button
-            key={type}
-            onClick={() => onActivityChange(type)}
-            className="px-3 py-1 rounded-full text-xs transition-all"
-            style={{
-              background: activityType === type ? 'rgba(255,255,255,0.2)' : 'rgba(255,255,255,0.06)',
-              color: activityType === type ? '#fff' : 'rgba(255,255,255,0.4)',
-              border: activityType === type ? '1px solid rgba(255,255,255,0.3)' : '1px solid transparent',
-            }}
-          >
-            {ACTIVITY_LABELS[type]}
-          </button>
-        ))}
-      </div>
+      {/* Start / Pause button */}
+      <button
+        onClick={isRunning ? onPause : onStart}
+        className="w-full py-4 rounded-xl text-base font-medium transition-all active:scale-95"
+        style={{
+          background: isRunning
+            ? 'rgba(255,255,255,0.08)'
+            : 'rgba(255,255,255,0.92)',
+          color: isRunning ? 'rgba(255,255,255,0.7)' : '#000',
+          letterSpacing: '0.05em',
+        }}
+      >
+        {isRunning ? 'Pause' : elapsedSeconds > 0 ? 'Resume' : 'Start'}
+      </button>
 
-      {/* Controls */}
-      <div className="flex gap-3 justify-center">
+      {/* Reset (subtle, only when paused and has elapsed) */}
+      {!isRunning && elapsedSeconds > 0 && (
         <button
-          onClick={isRunning ? onPause : onStart}
-          className="flex-1 py-3 rounded-xl text-sm font-medium transition-all"
-          style={{
-            background: isRunning ? 'rgba(255,255,255,0.1)' : 'rgba(255,255,255,0.9)',
-            color: isRunning ? '#fff' : '#000',
-          }}
+          onClick={onReset}
+          className="text-xs text-white/20 hover:text-white/40 transition-colors text-center -mt-2"
         >
-          {isRunning ? 'Pause' : elapsedSeconds > 0 ? 'Resume' : 'Start'}
+          Reset session
         </button>
-        {elapsedSeconds > 0 && (
-          <button
-            onClick={onReset}
-            className="px-4 py-3 rounded-xl text-sm text-white/40 transition-all"
-            style={{ background: 'rgba(255,255,255,0.06)' }}
-          >
-            Reset
-          </button>
-        )}
-      </div>
+      )}
     </div>
   );
 }
