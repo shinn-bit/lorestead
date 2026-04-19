@@ -2,7 +2,9 @@
   "name": "lorestead-backend",
   "version": "1.0.0",
   "scripts": {
-    "build": "esbuild src/sessions.ts src/progress.ts src/auth.ts --bundle --platform=node --target=node20 --outdir=dist --external:@aws-sdk/*"
+    "build": "esbuild src/sessions.ts src/progress.ts src/auth.ts --bundle --platform=node --target=node20 --outdir=dist --external:@aws-sdk/*",
+    "build:timelapse": "esbuild src/timelapse.ts --bundle --platform=node --target=node20 --outdir=dist --external:@aws-sdk/client-s3 --external:@aws-sdk/client-cognito-identity-provider",
+    "build:all": "npm run build && npm run build:timelapse"
   },
   "devDependencies": {
     "@types/aws-lambda": "^8.10.145",
@@ -13,6 +15,8 @@
   "dependencies": {
     "@aws-sdk/client-cognito-identity-provider": "^3.0.0",
     "@aws-sdk/client-dynamodb": "^3.0.0",
-    "@aws-sdk/lib-dynamodb": "^3.0.0"
+    "@aws-sdk/client-s3": "^3.0.0",
+    "@aws-sdk/lib-dynamodb": "^3.0.0",
+    "@aws-sdk/s3-request-presigner": "^3.0.0"
   }
 }

@@ -57,10 +57,59 @@ export const progressApi = {
 };
 
 // ── Sessions ──────────────────────────────────────────
+export interface SessionRecord {
+  sessionId: string;
+  startTime: string;
+  endTime: string;
+  durationMinutes: number;
+  activityType: string;
+  worldId: string;
+  createdAt: string;
+}
+
 export const sessionsApi = {
+  list: (token: string, limit = 50) =>
+    request<{ sessions: SessionRecord[] }>(
+      `/sessions?limit=${limit}`, {}, token
+    ),
+
   save: (token: string, durationMinutes: number, activityType: string, startTime: string) =>
     request<{ sessionId: string; saved: boolean }>('/sessions', {
       method: 'POST',
       body: JSON.stringify({ durationMinutes, activityType, startTime, worldId: 'prague' }),
+    }, token),
+};
+
+// ── Timelapse ─────────────────────────────────────────
+export const timelapseApi = {
+  /** フレームアップロード用 presigned URL を取得 */
+  getUploadUrl: (token: string, sessionId: string, frameIndex: number) =>
+    request<{ uploadUrl: string; key: string }>(
+      `/timelapse/upload-url?sessionId=${sessionId}&frameIndex=${frameIndex}`,
+      {},
+      token,
+    ),
+
+  /** フレームを S3 に直接アップロード（認証不要） */
+  uploadFrame: async (uploadUrl: string, blob: Blob): Promise<void> => {
+    const res = await fetch(uploadUrl, {
+      method: 'PUT',
+      body: blob,
+      headers: { 'Content-Type': 'image/jpeg' },
+    });
+    if (!res.ok) throw new Error(`Frame upload failed: ${res.status}`);
+  },
+
+  /** Lambda にタイムラプス生成を依頼し、ダウンロードURLを返す */
+  generate: (
+    token: string,
+    sessionId: string,
+    frameCount: number,
+    totalMinutes: number,
+    sessionSeconds: number,
+  ) =>
+    request<{ downloadUrl: string }>('/timelapse/generate', {
+      method: 'POST',
+      body: JSON.stringify({ sessionId, frameCount, totalMinutes, sessionSeconds }),
     }, token),
 };
