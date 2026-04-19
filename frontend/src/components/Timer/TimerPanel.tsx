@@ -26,6 +26,34 @@ function formatMinutes(minutes: number): string {
   return h > 0 ? `${h}h ${m}m` : `${m}m`;
 }
 
+const panelStyle: React.CSSProperties = {
+  background: 'var(--color-box-bg)',
+  backdropFilter: 'blur(24px)',
+  border: '1px solid var(--color-gold)',
+  borderRadius: '4px',
+  width: 270,
+  padding: '20px 22px',
+  display: 'flex',
+  flexDirection: 'column',
+  gap: '14px',
+  userSelect: 'none',
+};
+
+const goldButtonStyle: React.CSSProperties = {
+  width: '100%',
+  padding: '11px 0',
+  background: 'transparent',
+  border: '1px solid var(--color-gold)',
+  borderRadius: '3px',
+  color: 'var(--color-gold)',
+  fontFamily: 'var(--font-title)',
+  fontSize: '0.8rem',
+  letterSpacing: '0.18em',
+  textTransform: 'uppercase' as const,
+  cursor: 'pointer',
+  transition: 'background 0.2s, color 0.2s',
+};
+
 export function TimerPanel({ isRunning, elapsedSeconds, totalMinutes, onStart, onPause, onReset }: Props) {
   const stage = getCurrentStage(totalMinutes);
   const progress = getProgressToNextStage(totalMinutes);
@@ -33,77 +61,140 @@ export function TimerPanel({ isRunning, elapsedSeconds, totalMinutes, onStart, o
   const nextThreshold = STAGE_THRESHOLDS.find((t) => t.stage === stage + 1);
 
   return (
-    <div
-      className="flex flex-col gap-4 p-5 rounded-2xl select-none"
-      style={{
-        background: 'rgba(8,8,12,0.72)',
-        backdropFilter: 'blur(20px)',
-        border: '1px solid rgba(255,255,255,0.08)',
-        boxShadow: '0 8px 40px rgba(0,0,0,0.6)',
-        width: 260,
-      }}
-    >
-      {/* Drag handle hint */}
-      <div className="flex justify-center -mt-1 mb-1 cursor-grab active:cursor-grabbing">
-        <div className="w-8 h-1 rounded-full bg-white/15" />
+    <div style={panelStyle}>
+      {/* Drag handle */}
+      <div style={{ display: 'flex', justifyContent: 'center', marginTop: '-6px', marginBottom: '-4px', cursor: 'grab' }}>
+        <div style={{ width: 32, height: 3, borderRadius: 9999, background: 'rgba(201,168,76,0.3)' }} />
       </div>
 
-      {/* Stage info */}
-      <div className="flex items-center justify-between text-xs">
-        <span className="text-white/30 uppercase tracking-widest">Prague</span>
-        {isCompleted
-          ? <span className="text-amber-400">Complete!</span>
-          : <span className="text-white/40">Stage {stage} / 9</span>
-        }
+      {/* World + Stage */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <span
+          style={{
+            fontFamily: 'var(--font-ui)',
+            fontSize: '0.68rem',
+            letterSpacing: '0.25em',
+            textTransform: 'uppercase',
+            color: 'rgba(245,230,200,0.45)',
+          }}
+        >
+          Medieval Town
+        </span>
+        {isCompleted ? (
+          <span style={{ fontFamily: 'var(--font-title)', fontSize: '0.68rem', color: 'var(--color-gold)' }}>
+            Complete!
+          </span>
+        ) : (
+          <span style={{ fontFamily: 'var(--font-ui)', fontSize: '0.68rem', color: 'rgba(245,230,200,0.4)', letterSpacing: '0.1em' }}>
+            Phase {stage}
+          </span>
+        )}
       </div>
 
       {/* Progress bar */}
       {!isCompleted && (
         <div>
-          <div className="h-[3px] rounded-full bg-white/10 overflow-hidden">
+          <div
+            style={{
+              height: 2,
+              borderRadius: 9999,
+              background: 'rgba(201,168,76,0.18)',
+              overflow: 'hidden',
+            }}
+          >
             <div
-              className="h-full rounded-full bg-white/50 transition-all duration-1000"
-              style={{ width: `${progress * 100}%` }}
+              style={{
+                height: '100%',
+                borderRadius: 9999,
+                background: 'var(--color-gold)',
+                width: `${progress * 100}%`,
+                transition: 'width 1s linear',
+              }}
             />
           </div>
           {nextThreshold && (
-            <p className="text-[11px] text-white/25 mt-1 text-right">
+            <p
+              style={{
+                fontSize: '0.65rem',
+                color: 'rgba(245,230,200,0.3)',
+                marginTop: 4,
+                textAlign: 'right',
+                fontFamily: 'var(--font-ui)',
+              }}
+            >
               Next stage in {formatMinutes(nextThreshold.minutes - totalMinutes)}
             </p>
           )}
         </div>
       )}
 
-      {/* Session timer */}
-      <div className="text-center py-1">
-        <p className="text-[42px] font-thin tabular-nums text-white leading-none tracking-tight">
+      {/* Session elapsed timer */}
+      <div style={{ textAlign: 'center', padding: '4px 0 2px' }}>
+        <p
+          style={{
+            fontFamily: 'var(--font-timer)',
+            fontSize: '2.8rem',
+            fontWeight: 400,
+            color: 'var(--color-text)',
+            lineHeight: 1,
+            letterSpacing: '0.05em',
+          }}
+        >
           {formatTime(elapsedSeconds)}
         </p>
-        <p className="text-xs text-white/25 mt-2">Total {formatMinutes(totalMinutes)} focused</p>
+        <p
+          style={{
+            fontSize: '0.65rem',
+            color: 'rgba(245,230,200,0.3)',
+            marginTop: 8,
+            fontFamily: 'var(--font-ui)',
+            letterSpacing: '0.12em',
+          }}
+        >
+          Total {formatMinutes(totalMinutes)} focused
+        </p>
       </div>
 
       {/* Start / Pause button */}
       <button
         onClick={isRunning ? onPause : onStart}
-        className="w-full py-4 rounded-xl text-base font-medium transition-all active:scale-95"
         style={{
-          background: isRunning
-            ? 'rgba(255,255,255,0.08)'
-            : 'rgba(255,255,255,0.92)',
-          color: isRunning ? 'rgba(255,255,255,0.7)' : '#000',
-          letterSpacing: '0.05em',
+          ...goldButtonStyle,
+          ...(isRunning
+            ? { background: 'var(--color-gold-dim)', color: 'var(--color-gold)' }
+            : {}),
+        }}
+        onMouseEnter={e => {
+          if (!isRunning) (e.currentTarget as HTMLButtonElement).style.background = 'var(--color-gold-dim)';
+        }}
+        onMouseLeave={e => {
+          if (!isRunning) (e.currentTarget as HTMLButtonElement).style.background = 'transparent';
         }}
       >
         {isRunning ? 'Pause' : elapsedSeconds > 0 ? 'Resume' : 'Start'}
       </button>
 
-      {/* Reset (subtle, only when paused and has elapsed) */}
+      {/* Reset (only when paused with elapsed time) */}
       {!isRunning && elapsedSeconds > 0 && (
         <button
           onClick={onReset}
-          className="text-xs text-white/20 hover:text-white/40 transition-colors text-center -mt-2"
+          style={{
+            background: 'transparent',
+            border: 'none',
+            color: 'rgba(245,230,200,0.25)',
+            fontSize: '0.68rem',
+            fontFamily: 'var(--font-ui)',
+            letterSpacing: '0.12em',
+            textTransform: 'uppercase',
+            cursor: 'pointer',
+            textAlign: 'center',
+            marginTop: '-6px',
+            transition: 'color 0.2s',
+          }}
+          onMouseEnter={e => (e.currentTarget.style.color = 'rgba(245,230,200,0.5)')}
+          onMouseLeave={e => (e.currentTarget.style.color = 'rgba(245,230,200,0.25)')}
         >
-          Reset session
+          End session
         </button>
       )}
     </div>

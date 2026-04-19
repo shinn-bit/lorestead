@@ -1,4 +1,10 @@
 @import "tailwindcss";
+@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700;900&display=swap');
+
+/* Tailwind の font-serif を Cinzel に上書き */
+@theme {
+  --font-serif: 'Cinzel', serif;
+}
 
 * {
   box-sizing: border-box;
@@ -7,9 +13,9 @@
 }
 
 body {
-  background: #000;
-  color: #fff;
-  font-family: system-ui, sans-serif;
+  background: #15171a;
+  color: #f5e6d3;
+  font-family: 'Cinzel', serif;
   overflow: hidden;
 }
 
@@ -17,3 +23,385 @@ body {
   width: 100%;
   height: 100dvh;
 }
+/* ===== ポモドーロパネル専用の強制CSS ===== */
+.pomodoro-panel-custom {
+  background-color: #212328 !important; /* 透けないマットな黒 */
+  border-radius: 32px !important;
+  padding: 28px !important;
+  width: 256px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5) !important;
+  position: absolute !important;
+  top: 96px !important;
+  right: 40px !important;
+  z-index: 50 !important;
+  backdrop-filter: none !important; /* 透明化を強制キャンセル */
+  border: none !important;
+}
+
+.pomodoro-toggle-wrapper {
+  display: flex !important;
+  gap: 8px !important;
+  width: 100% !important;
+  justify-content: center !important;
+  margin-bottom: 24px !important;
+}
+
+.pomodoro-btn-active {
+  background-color: #36383e !important; /* 選択中のブロック色 */
+  color: #f5e6d3 !important;
+  padding: 10px 20px !important;
+  border-radius: 9999px !important;
+  font-size: 12px !important;
+  font-family: 'Cinzel', serif !important;
+  letter-spacing: 0.1em !important;
+  border: none !important;
+  cursor: pointer !important;
+}
+
+.pomodoro-btn-inactive {
+  background-color: transparent !important;
+  color: rgba(245, 230, 211, 0.4) !important;
+  padding: 10px 20px !important;
+  border-radius: 9999px !important;
+  font-size: 12px !important;
+  font-family: 'Cinzel', serif !important;
+  letter-spacing: 0.1em !important;
+  border: none !important;
+  cursor: pointer !important;
+}
+
+.pomodoro-time-display {
+  font-size: 72px !important;
+  line-height: 1 !important;
+  font-family: 'Cinzel', serif !important;
+  font-weight: 300 !important;
+  color: #f5e6d3 !important;
+  margin-bottom: 24px !important;
+}
+
+.pomodoro-start-btn {
+  width: 100% !important;
+  padding: 14px !important;
+  border-radius: 24px !important;
+  font-size: 14px !important;
+  font-family: 'Cinzel', serif !important;
+  letter-spacing: 0.2em !important;
+  text-transform: uppercase !important;
+  background-color: transparent !important;
+  border: 1px solid rgba(212, 175, 55, 0.4) !important;
+  color: #f5e6d3 !important;
+  margin-bottom: 16px !important;
+  cursor: pointer !important;
+}
+
+.pomodoro-presets-wrapper {
+  display: flex !important;
+  gap: 8px !important;
+  width: 100% !important;
+}
+
+.pomodoro-preset-btn {
+  flex: 1 !important;
+  padding: 10px !important;
+  font-size: 12px !important;
+  font-family: sans-serif !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  border-radius: 12px !important;
+  background-color: transparent !important;
+  color: rgba(245, 230, 211, 0.4) !important;
+  cursor: pointer !important;
+}
+/* ===== ナビゲーションメニュー（HOME/HISTORY）専用の強制CSS ===== */
+.nav-wrapper-custom {
+  position: absolute !important;
+  top: 28px !important;
+  right: 40px !important;
+  z-index: 50 !important;
+  display: flex !important;
+  gap: 8px !important;
+  background-color: rgba(26, 28, 32, 0.8) !important;
+  padding: 6px !important;
+  border-radius: 9999px !important; /* 完全な角丸（カプセル型） */
+  border: 1px solid rgba(255, 255, 255, 0.05) !important;
+  backdrop-filter: blur(8px) !important;
+}
+
+.nav-btn-active {
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  padding: 8px 24px !important;
+  border-radius: 9999px !important;
+  font-size: 14px !important;
+  font-family: 'Cinzel', serif !important;
+  letter-spacing: 0.15em !important;
+  text-transform: uppercase !important;
+  background-color: rgba(212, 175, 55, 0.15) !important; /* 薄いゴールド背景 */
+  border: 1px solid rgba(212, 175, 55, 0.5) !important; /* ゴールド枠線 */
+  color: #f5e6d3 !important;
+  cursor: pointer !important;
+  transition: all 0.2s ease-in-out !important;
+}
+
+.nav-btn-inactive {
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  padding: 8px 24px !important;
+  border-radius: 9999px !important;
+  font-size: 14px !important;
+  font-family: 'Cinzel', serif !important;
+  letter-spacing: 0.15em !important;
+  text-transform: uppercase !important;
+  background-color: transparent !important;
+  border: 1px solid transparent !important;
+  color: rgba(245, 230, 211, 0.4) !important;
+  cursor: pointer !important;
+  transition: all 0.2s ease-in-out !important;
+}
+
+.nav-btn-inactive:hover {
+  color: #f5e6d3 !important;
+  background-color: rgba(255, 255, 255, 0.05) !important;
+}
+
+/* ===== History ページ ===== */
+.history-grid {
+  display: grid !important;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)) !important;
+  gap: 32px !important;
+  padding: 8px 0 80px !important;
+  max-width: 1200px !important;
+  margin: 0 auto !important;
+}
+
+.history-card {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 14px !important;
+  cursor: pointer !important;
+}
+
+.history-card-image {
+  position: relative !important;
+  aspect-ratio: 1 / 1 !important;
+  border-radius: 28px !important;
+  overflow: hidden !important;
+  border: 1px solid rgba(212, 175, 55, 0.35) !important;
+  background: #1a1c20 !important;
+  transition: transform 0.4s ease, box-shadow 0.4s ease !important;
+}
+
+.history-card:hover .history-card-image {
+  transform: translateY(-4px) !important;
+  box-shadow: 0 20px 40px rgba(212, 175, 55, 0.12) !important;
+}
+
+.history-card-thumb {
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: cover !important;
+  opacity: 0.75 !important;
+  transition: opacity 0.4s ease !important;
+}
+
+.history-card:hover .history-card-thumb {
+  opacity: 1 !important;
+}
+
+.history-card-overlay {
+  position: absolute !important;
+  inset: 0 !important;
+  background: linear-gradient(to top, rgba(0,0,0,0.7) 0%, transparent 50%) !important;
+  display: flex !important;
+  flex-direction: column !important;
+  justify-content: flex-end !important;
+  padding: 20px !important;
+  opacity: 0 !important;
+  transition: opacity 0.3s ease !important;
+}
+
+.history-card:hover .history-card-overlay {
+  opacity: 1 !important;
+}
+
+.history-card-action {
+  width: 100% !important;
+  padding: 10px !important;
+  border-radius: 9999px !important;
+  font-size: 11px !important;
+  font-family: 'Cinzel', serif !important;
+  letter-spacing: 0.2em !important;
+  text-transform: uppercase !important;
+  text-align: center !important;
+  cursor: pointer !important;
+  transition: background-color 0.2s ease !important;
+}
+
+.history-card-action-resume {
+  background-color: rgba(212, 175, 55, 0.25) !important;
+  border: 1px solid rgba(212, 175, 55, 0.6) !important;
+  color: #f5e6d3 !important;
+}
+
+.history-card-action-resume:hover {
+  background-color: rgba(212, 175, 55, 0.4) !important;
+}
+
+.history-card-action-download {
+  background-color: rgba(245, 230, 211, 0.1) !important;
+  border: 1px solid rgba(245, 230, 211, 0.3) !important;
+  color: #f5e6d3 !important;
+}
+
+.history-card-action-download:hover {
+  background-color: rgba(245, 230, 211, 0.2) !important;
+}
+
+.history-card-meta {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 4px !important;
+  padding: 0 4px !important;
+}
+
+.history-card-date {
+  font-family: sans-serif !important;
+  font-size: 12px !important;
+  color: rgba(245, 230, 211, 0.5) !important;
+  letter-spacing: 0.08em !important;
+}
+
+.history-card-info {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+}
+
+.history-card-stage {
+  font-family: 'Cinzel', serif !important;
+  font-size: 12px !important;
+  color: #d4af37 !important;
+  letter-spacing: 0.15em !important;
+  text-transform: uppercase !important;
+}
+
+.history-card-status {
+  font-family: sans-serif !important;
+  font-size: 10px !important;
+  padding: 2px 8px !important;
+  border-radius: 9999px !important;
+  letter-spacing: 0.1em !important;
+  text-transform: uppercase !important;
+}
+
+.history-status-active {
+  background-color: rgba(212, 175, 55, 0.15) !important;
+  color: #d4af37 !important;
+  border: 1px solid rgba(212, 175, 55, 0.3) !important;
+}
+
+.history-status-complete {
+  background-color: rgba(245, 230, 211, 0.1) !important;
+  color: rgba(245, 230, 211, 0.5) !important;
+  border: 1px solid rgba(245, 230, 211, 0.2) !important;
+}
+
+/* ── カード削除ボタン ── */
+.history-card-delete {
+  position: absolute !important;
+  top: 12px !important;
+  right: 12px !important;
+  width: 28px !important;
+  height: 28px !important;
+  border-radius: 9999px !important;
+  background-color: rgba(0,0,0,0.5) !important;
+  border: 1px solid rgba(255,255,255,0.15) !important;
+  color: rgba(245,230,211,0.5) !important;
+  font-size: 14px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  cursor: pointer !important;
+  opacity: 0 !important;
+  transition: opacity 0.2s ease, background-color 0.2s ease !important;
+  z-index: 10 !important;
+  line-height: 1 !important;
+}
+
+.history-card:hover .history-card-delete {
+  opacity: 1 !important;
+}
+
+.history-card-delete:hover {
+  background-color: rgba(220,50,50,0.6) !important;
+  border-color: rgba(220,50,50,0.6) !important;
+  color: #fff !important;
+}
+
+/* ── 削除確認オーバーレイ ── */
+.history-card-confirm {
+  position: absolute !important;
+  inset: 0 !important;
+  background: rgba(0,0,0,0.82) !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 16px !important;
+  border-radius: 28px !important;
+  z-index: 20 !important;
+  padding: 24px !important;
+}
+
+.history-card-confirm p {
+  font-family: 'Cinzel', serif !important;
+  font-size: 12px !important;
+  color: rgba(245,230,211,0.8) !important;
+  letter-spacing: 0.1em !important;
+  text-align: center !important;
+}
+
+.history-confirm-btns {
+  display: flex !important;
+  gap: 8px !important;
+  width: 100% !important;
+}
+
+.history-confirm-cancel {
+  flex: 1 !important;
+  padding: 8px !important;
+  border-radius: 9999px !important;
+  font-family: 'Cinzel', serif !important;
+  font-size: 10px !important;
+  letter-spacing: 0.15em !important;
+  text-transform: uppercase !important;
+  background: transparent !important;
+  border: 1px solid rgba(255,255,255,0.2) !important;
+  color: rgba(245,230,211,0.6) !important;
+  cursor: pointer !important;
+}
+
+.history-confirm-delete {
+  flex: 1 !important;
+  padding: 8px !important;
+  border-radius: 9999px !important;
+  font-family: 'Cinzel', serif !important;
+  font-size: 10px !important;
+  letter-spacing: 0.15em !important;
+  text-transform: uppercase !important;
+  background: rgba(200,50,50,0.3) !important;
+  border: 1px solid rgba(200,50,50,0.6) !important;
+  color: #f5e6d3 !important;
+  cursor: pointer !important;
+}
+
+/* ===== スクロールバー ===== */
+.custom-scrollbar::-webkit-scrollbar { width: 6px; }
+.custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+.custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(212,175,55,0.2); border-radius: 10px; }
+.custom-scrollbar::-webkit-scrollbar-thumb:hover { background: rgba(212,175,55,0.4); }
+.iso-transform { transform: rotateX(60deg) rotateZ(45deg); }
