@@ -1,4 +1,9 @@
 @import "tailwindcss";
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.3; }
+}
 @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700;900&display=swap');
 
 /* Tailwind の font-serif を Cinzel に上書き */

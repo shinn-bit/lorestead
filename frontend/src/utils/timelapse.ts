@@ -1,37 +1,42 @@
+import { getVideoConfig } from './stageCalculator';
+
 const CANVAS_SIZE       = 1080;
-const STAGE_DURATION_MS = 1400;
+const STAGE_DURATION_MS = 1400; // フォールバック時（動画）の1ステージあたり表示時間
 const TEXT_DURATION_MS  = 2000;
 const OUTRO_DURATION_MS = 1000;
 
-/** MP4動画の指定時刻のフレームをcanvasに描画できるvideo要素を返す */
-function captureVideoFrame(src: string, seekTime = 1.0): Promise<HTMLVideoElement | null> {
+// ─── フォールバック用：動画ロード ───────────────────────────────────────────
+
+function getStageSrc(stage: number): string {
+  const config = getVideoConfig(stage);
+  return config.loopSrc ?? (getVideoConfig(8).loopSrc as string);
+}
+
+function loadVideoForPlayback(src: string): Promise<HTMLVideoElement | null> {
   return new Promise(resolve => {
-    const video = document.createElement('video');
-    video.muted = true;
+    const video       = document.createElement('video');
+    video.muted       = true;
     video.playsInline = true;
-    video.src = src;
-
-    video.addEventListener('error', () => resolve(null), { once: true });
-
-    video.addEventListener('loadedmetadata', () => {
-      video.currentTime = Math.min(seekTime, video.duration * 0.3);
-    }, { once: true });
-
-    video.addEventListener('seeked', () => resolve(video), { once: true });
-
+    video.loop        = true;
+    video.preload     = 'auto';
+    video.src         = src;
+    video.addEventListener('error',   () => resolve(null), { once: true });
+    video.addEventListener('canplay', () => resolve(video), { once: true });
     video.load();
   });
 }
 
+// ─── テキスト・アウトロ描画 ────────────────────────────────────────────────
+
 function drawText(
   ctx: CanvasRenderingContext2D,
-  lastVideo: HTMLVideoElement | null,
+  lastFrame: CanvasImageSource | null,
   totalMinutes: number,
   sessionSeconds: number,
 ) {
   ctx.fillStyle = '#000';
   ctx.fillRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
-  if (lastVideo) ctx.drawImage(lastVideo, 0, 0, CANVAS_SIZE, CANVAS_SIZE);
+  if (lastFrame) ctx.drawImage(lastFrame, 0, 0, CANVAS_SIZE, CANVAS_SIZE);
 
   ctx.fillStyle = 'rgba(0,0,0,0.55)';
   ctx.fillRect(0, CANVAS_SIZE * 0.6, CANVAS_SIZE, CANVAS_SIZE * 0.4);
@@ -46,15 +51,15 @@ function drawText(
 
   ctx.textAlign = 'center';
 
-  ctx.font = 'bold 44px Cinzel, serif';
+  ctx.font      = 'bold 44px Cinzel, serif';
   ctx.fillStyle = '#F5E6C8';
   ctx.fillText(date, CANVAS_SIZE / 2, CANVAS_SIZE * 0.72);
 
-  ctx.font = '34px Cinzel, serif';
+  ctx.font      = '34px Cinzel, serif';
   ctx.fillStyle = '#C9A84C';
   ctx.fillText(`Today  ${sH}h ${sM}m`, CANVAS_SIZE / 2, CANVAS_SIZE * 0.80);
 
-  ctx.font = '30px Cinzel, serif';
+  ctx.font      = '30px Cinzel, serif';
   ctx.fillStyle = '#F5E6C8';
   ctx.fillText(`Total  ${tH}h ${tM}m  /  20h`, CANVAS_SIZE / 2, CANVAS_SIZE * 0.87);
 }
@@ -65,14 +70,21 @@ function drawOutro(ctx: CanvasRenderingContext2D) {
 
   ctx.textAlign = 'center';
   ctx.fillStyle = '#C9A84C';
-  ctx.font = 'bold 80px Cinzel, serif';
+  ctx.font      = 'bold 80px Cinzel, serif';
   ctx.fillText('Lorestead', CANVAS_SIZE / 2, CANVAS_SIZE / 2 - 20);
 
   ctx.fillStyle = 'rgba(245,230,200,0.5)';
-  ctx.font = '34px Cinzel, serif';
+  ctx.font      = '34px Cinzel, serif';
   ctx.fillText('#lorestead', CANVAS_SIZE / 2, CANVAS_SIZE / 2 + 60);
 }
 
+// ─── メイン生成関数 ────────────────────────────────────────────────────────
+
+/**
+ * タイムラプス動画を生成する。
+ * - capturedFrames.length > 0 → キャプチャ済みフレーム（JPEG Blob）を使用
+ * - capturedFrames.length === 0 → ステージ動画からフォールバック生成
+ */
 export async function generateTimelapse(
   currentStage: number,
   totalMinutes: number,
@@ -83,26 +95,37 @@ export async function generateTimelapse(
 
   onProgress(0.02);
 
-  // キャプチャ済みフレームがあればそれを使う。なければMP4から取得
-  let videos: (HTMLVideoElement | null)[];
-  if (capturedFrames.length > 0) {
-    videos = await Promise.all(
-      capturedFrames.map(blob => captureVideoFrame(URL.createObjectURL(blob)))
-    );
+  const useCaptures = capturedFrames.length > 0;
+
+  // ── キャプチャフレームをImageBitmapに変換（メインパス） ──
+  let bitmaps: ImageBitmap[] = [];
+  let videos: (HTMLVideoElement | null)[] = [];
+
+  if (useCaptures) {
+    bitmaps = await Promise.all(capturedFrames.map(b => createImageBitmap(b)));
   } else {
+    // フォールバック：ステージ動画をロード
+    const stageCount = Math.max(1, Math.min(currentStage, 9));
     videos = await Promise.all(
-      Array.from({ length: currentStage }, (_, i) =>
-        captureVideoFrame(`/assets/worlds/prague/stage_0${i + 1}.mp4`)
+      Array.from({ length: stageCount }, (_, i) =>
+        loadVideoForPlayback(getStageSrc(i + 1))
       )
     );
   }
-  const videoCount = videos.length;
+
   onProgress(0.15);
 
-  const canvas = document.createElement('canvas');
+  const itemCount = useCaptures ? bitmaps.length : videos.length;
+
+  // キャプチャフレームは全体で約12秒に収まるよう1枚あたりの表示時間を調整
+  const frameDurationMs = useCaptures
+    ? Math.max(200, Math.min(1400, 12_000 / itemCount))
+    : STAGE_DURATION_MS;
+
+  const canvas  = document.createElement('canvas');
   canvas.width  = CANVAS_SIZE;
   canvas.height = CANVAS_SIZE;
-  const ctx = canvas.getContext('2d')!;
+  const ctx     = canvas.getContext('2d')!;
 
   const mimeType = MediaRecorder.isTypeSupported('video/webm;codecs=vp9')
     ? 'video/webm;codecs=vp9'
@@ -114,38 +137,57 @@ export async function generateTimelapse(
   recorder.ondataavailable = e => { if (e.data.size > 0) chunks.push(e.data); };
 
   return new Promise((resolve, reject) => {
-    recorder.onstop = () => resolve(new Blob(chunks, { type: mimeType }));
+    recorder.onstop  = () => resolve(new Blob(chunks, { type: mimeType }));
     recorder.onerror = reject;
     recorder.start();
 
     type Phase = 'stages' | 'text' | 'outro';
-    let phase: Phase  = 'stages';
-    let phaseStart    = performance.now();
+    let phase: Phase = 'stages';
+    let phaseStart   = performance.now();
+    let currentIdx   = -1;
 
     function tick() {
       const now     = performance.now();
       const elapsed = now - phaseStart;
 
       if (phase === 'stages') {
-        const idx = Math.min(Math.floor(elapsed / STAGE_DURATION_MS), videoCount - 1);
-        const vid = videos[idx];
+        const idx = Math.min(Math.floor(elapsed / frameDurationMs), itemCount - 1);
 
         ctx.fillStyle = '#000';
         ctx.fillRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
-        if (vid) ctx.drawImage(vid, 0, 0, CANVAS_SIZE, CANVAS_SIZE);
 
-        onProgress(0.15 + 0.65 * (idx / videoCount));
+        if (useCaptures) {
+          // ── キャプチャフレームを描画 ──
+          if (bitmaps[idx]) ctx.drawImage(bitmaps[idx], 0, 0, CANVAS_SIZE, CANVAS_SIZE);
+        } else {
+          // ── 動画フォールバック ──
+          if (idx !== currentIdx) {
+            if (currentIdx >= 0) videos[currentIdx]?.pause();
+            currentIdx = idx;
+            const vid = videos[idx];
+            if (vid) { vid.currentTime = 0; vid.play().catch(() => {}); }
+          }
+          const vid = videos[idx];
+          if (vid && vid.readyState >= 2) ctx.drawImage(vid, 0, 0, CANVAS_SIZE, CANVAS_SIZE);
+        }
 
-        if (elapsed >= STAGE_DURATION_MS * videoCount) {
-          phase = 'text';
+        onProgress(0.15 + 0.65 * (idx / itemCount));
+
+        if (elapsed >= frameDurationMs * itemCount) {
+          if (!useCaptures) videos.forEach(v => v?.pause());
+          phase      = 'text';
           phaseStart = now;
         }
+
       } else if (phase === 'text') {
-        drawText(ctx, videos[videos.length - 1] ?? null, totalMinutes, sessionSeconds);
+        const lastFrame = useCaptures
+          ? (bitmaps[bitmaps.length - 1] ?? null)
+          : (videos[videos.length - 1] ?? null);
+        drawText(ctx, lastFrame, totalMinutes, sessionSeconds);
         onProgress(0.85);
 
         if (elapsed >= TEXT_DURATION_MS) {
-          phase = 'outro';
+          phase      = 'outro';
           phaseStart = now;
         }
       } else {
@@ -153,6 +195,7 @@ export async function generateTimelapse(
         onProgress(0.95);
 
         if (elapsed >= OUTRO_DURATION_MS) {
+          bitmaps.forEach(b => b.close());
           recorder.stop();
           onProgress(1.0);
           return;

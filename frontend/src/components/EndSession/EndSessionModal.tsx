@@ -8,11 +8,10 @@ interface Props {
   currentStage: number;
   totalMinutes: number;
   sessionSeconds: number;
-  /** S3にアップロード済みのセッションID */
   sessionId: string;
-  /** アップロード済みフレーム数 */
   frameCount: number;
-  /** Cognitoアクセストークン（nullなら未ログイン） */
+  /** IndexedDBからローカルフレームを取得する関数 */
+  getLocalFrames: () => Promise<Blob[]>;
   accessToken: string | null;
   onClose: () => void;
   onConfirm: () => void;
@@ -20,7 +19,7 @@ interface Props {
 
 export function EndSessionModal({
   currentStage, totalMinutes, sessionSeconds,
-  sessionId, frameCount, accessToken,
+  sessionId, frameCount, getLocalFrames, accessToken,
   onClose, onConfirm,
 }: Props) {
   const [phase, setPhase]       = useState<Phase>('confirm');
@@ -57,12 +56,13 @@ export function EndSessionModal({
         setVideoUrl(downloadUrl);
         setBlob(null); // presigned URLなのでBlob不要
       } else {
-        // ─── ブラウザ側フォールバック（MP4フレームキャプチャ） ───
+        // ─── ブラウザ側生成（ローカルキャプチャフレーム → なければ動画フォールバック） ───
+        const localFrames = await getLocalFrames();
         const result = await generateTimelapse(
           currentStage,
           totalMinutes,
           sessionSeconds,
-          [],
+          localFrames,
           (ratio) => setProgress(Math.round(ratio * 100)),
         );
         const url = URL.createObjectURL(result);
@@ -114,11 +114,9 @@ export function EndSessionModal({
             </h2>
             <p className="text-center text-sm text-[#f5e6d3]/60 tracking-widest leading-relaxed">
               Ready to wrap up?<br />
-              {isServerGeneration
+              {frameCount > 0
                 ? `${frameCount} frames captured — generate your timelapse.`
-                : accessToken
-                  ? 'No frames captured yet (session too short).'
-                  : 'Sign in to generate a timelapse from your session.'}
+                : 'Timer just started — keep going to capture frames.'}
             </p>
 
             <div className="flex flex-col gap-3 mt-2">

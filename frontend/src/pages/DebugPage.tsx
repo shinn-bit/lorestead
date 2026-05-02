@@ -1,7 +1,8 @@
-import { useRef } from 'react';
+import { useRef, useState } from 'react';
 import { useTimer } from '../hooks/useTimer';
 import { getCurrentStage, STAGE_THRESHOLDS } from '../utils/stageCalculator';
 import { WorldPlayer } from '../components/World/WorldPlayer';
+import { generateTimelapse, downloadBlob } from '../utils/timelapse';
 
 function formatMinutes(minutes: number): string {
   const h = Math.floor(minutes / 60);
@@ -13,6 +14,27 @@ export function DebugPage() {
   const { isRunning, elapsedSeconds, totalMinutes, start, pause, reset, debugSetMinutes } = useTimer();
   const stage = getCurrentStage(totalMinutes);
   const inputRef = useRef<HTMLInputElement>(null);
+  const [genProgress, setGenProgress] = useState<number | null>(null);
+
+  async function handleGenerateTimelapse() {
+    if (genProgress !== null) return;
+    setGenProgress(0);
+    try {
+      const blob = await generateTimelapse(
+        stage,
+        totalMinutes,
+        elapsedSeconds,
+        [],
+        (ratio) => setGenProgress(Math.round(ratio * 100)),
+      );
+      const date = new Date().toISOString().slice(0, 10);
+      downloadBlob(blob, `debug_timelapse_stage${stage}_${date}.webm`);
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setGenProgress(null);
+    }
+  }
 
   return (
     <div className="relative w-full h-dvh overflow-hidden bg-black">
@@ -72,6 +94,64 @@ export function DebugPage() {
             >
               Reset
             </button>
+          </div>
+
+          {/* +1H / -1H */}
+          <div>
+            <p className="text-white/30 text-xs mb-2 uppercase tracking-widest">Time adjust</p>
+            <div className="flex gap-2">
+              <button
+                onClick={() => debugSetMinutes(Math.max(0, totalMinutes - 60))}
+                disabled={totalMinutes === 0}
+                className="flex-1 py-2 rounded-lg text-xs text-white/70 transition-all"
+                style={{
+                  background: 'rgba(255,255,255,0.06)',
+                  opacity: totalMinutes === 0 ? 0.35 : 1,
+                }}
+              >
+                − 1H
+              </button>
+              <button
+                onClick={() => debugSetMinutes(totalMinutes + 60)}
+                className="flex-1 py-2 rounded-lg text-xs text-white/70 transition-all"
+                style={{ background: 'rgba(255,255,255,0.06)' }}
+              >
+                + 1H
+              </button>
+            </div>
+          </div>
+
+          {/* Timelapse */}
+          <div>
+            <p className="text-white/30 text-xs mb-2 uppercase tracking-widest">Timelapse</p>
+            <button
+              onClick={handleGenerateTimelapse}
+              disabled={genProgress !== null}
+              className="w-full py-2 rounded-lg text-xs transition-all"
+              style={{
+                background: genProgress !== null ? 'rgba(212,175,55,0.08)' : 'rgba(212,175,55,0.18)',
+                border: '1px solid rgba(212,175,55,0.4)',
+                color: genProgress !== null ? 'rgba(212,175,55,0.5)' : '#d4af37',
+                cursor: genProgress !== null ? 'not-allowed' : 'pointer',
+              }}
+            >
+              {genProgress !== null ? `Generating… ${genProgress}%` : 'Generate & Download'}
+            </button>
+            {genProgress !== null && (
+              <div
+                className="mt-2 rounded-full overflow-hidden"
+                style={{ height: 3, background: 'rgba(255,255,255,0.08)' }}
+              >
+                <div
+                  style={{
+                    height: '100%',
+                    width: `${genProgress}%`,
+                    background: '#d4af37',
+                    transition: 'width 0.2s',
+                  }}
+                />
+              </div>
+            )}
           </div>
 
           {/* Stage jump */}

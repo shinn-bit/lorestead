@@ -1,5 +1,11 @@
 import { useEffect, useRef } from 'react';
 import { useDraggable } from '../../hooks/useDraggable';
+import { getVideoConfig } from '../../utils/stageCalculator';
+
+function getLoopSrc(stage: number): string {
+  const config = getVideoConfig(stage);
+  return config.loopSrc ?? (getVideoConfig(8).loopSrc as string);
+}
 
 // ── PiP window content (no dragging — OS handles window dragging) ──────────
 interface PiPProps {
@@ -18,7 +24,7 @@ export function PiPView({ stage, isRunning, isActive, totalAccumulatedTime, onTo
   useEffect(() => {
     const video = videoRef.current;
     if (!video) return;
-    video.src = `/assets/worlds/prague/stage_0${stage}.mp4`;
+    video.src = getLoopSrc(stage);
     video.load();
     video.play().catch(() => {});
     prevStageRef.current = stage;
@@ -29,7 +35,7 @@ export function PiPView({ stage, isRunning, isActive, totalAccumulatedTime, onTo
     const video = videoRef.current;
     if (!video || prevStageRef.current === stage) return;
     prevStageRef.current = stage;
-    video.src = `/assets/worlds/prague/stage_0${stage}.mp4`;
+    video.src = getLoopSrc(stage);
     video.load();
     video.play().catch(() => {});
   }, [stage]);
@@ -155,7 +161,7 @@ export function MiniPlayer({ stage, isRunning, isActive, totalAccumulatedTime, o
     const video = videoRef.current;
     if (!video || prevStageRef.current === stage) return;
     prevStageRef.current = stage;
-    video.src = `/assets/worlds/prague/stage_0${stage}.mp4`;
+    video.src = getLoopSrc(stage);
     video.load();
     video.play().catch(() => {});
   }, [stage]);
@@ -164,7 +170,7 @@ export function MiniPlayer({ stage, isRunning, isActive, totalAccumulatedTime, o
   useEffect(() => {
     const video = videoRef.current;
     if (!video) return;
-    video.src = `/assets/worlds/prague/stage_0${stage}.mp4`;
+    video.src = getLoopSrc(stage);
     video.load();
     video.play().catch(() => {});
     prevStageRef.current = stage;

@@ -163,20 +163,23 @@ export default function App() {
 
       {/* ── コンテンツ（全画面） ── */}
       <div className="absolute inset-0">
-        {currentView === 'home'
-          ? <MainPage
-              resumeMinutes={resumeMinutes}
-              onResumeHandled={() => setResumeMinutes(null)}
-              onAddHistory={handleAddHistory}
-            />
-          : <HistoryPage
-              items={historyItems}
-              loading={historyLoading}
-              isLoggedIn={isLoggedIn}
-              onResume={handleResume}
-              onDelete={handleDeleteHistory}
-              onSignIn={() => setShowAuth(true)}
-            />}
+        {currentView === 'home' && (
+          <MainPage
+            resumeMinutes={resumeMinutes}
+            onResumeHandled={() => setResumeMinutes(null)}
+            onAddHistory={handleAddHistory}
+          />
+        )}
+        {currentView === 'history' && (
+          <HistoryPage
+            items={historyItems}
+            loading={historyLoading}
+            isLoggedIn={isLoggedIn}
+            onResume={handleResume}
+            onDelete={handleDeleteHistory}
+            onSignIn={() => setShowAuth(true)}
+          />
+        )}
         {showAuth && <AuthModal onClose={() => setShowAuth(false)} />}
       </div>
 
