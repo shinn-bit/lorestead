@@ -11,7 +11,9 @@ import { AuthModal } from '../components/Auth/AuthModal';
 import { EndSessionModal } from '../components/EndSession/EndSessionModal';
 import { MiniPlayer, PiPView } from '../components/MiniPlayer/MiniPlayer';
 import { useFrameCapture } from '../hooks/useFrameCapture';
+import { useScreenCapture } from '../hooks/useScreenCapture';
 import { usePictureInPicture } from '../hooks/usePictureInPicture';
+import { ScreenCapturePrompt } from '../components/ScreenCapture/ScreenCapturePrompt';
 import { Button } from '../App';
 
 function formatTime(seconds: number, showHours = false): string {
@@ -50,10 +52,12 @@ export function MainPage({ resumeMinutes, onResumeHandled, onAddHistory }: Props
   const { isRunning, elapsedSeconds, totalMinutes, start, pause, reset, resetAll, debugSetMinutes } = useTimer();
   const { isActive } = useVisibility();
   const { isLoggedIn, accessToken, signOut, syncProgress } = useAuth();
-  const [showAuth, setShowAuth]               = useState(false);
-  const [showEndSession, setShowEndSession]   = useState(false);
+  const [showAuth, setShowAuth]                     = useState(false);
+  const [showEndSession, setShowEndSession]         = useState(false);
   const [showRestartConfirm, setShowRestartConfirm] = useState(false);
-  const [isMini, setIsMini]                   = useState(false);
+  const [isMini, setIsMini]                         = useState(false);
+  const [showScreenPrompt, setShowScreenPrompt]     = useState(false);
+  const screenPromptShownRef                        = useRef(false);
   const { pipWindow, isSupported: isPipSupported, open: openPip, close: closePip, isOpen: isPipOpen } = usePictureInPicture(280, 210);
 
   // History画面からのResume
@@ -67,16 +71,34 @@ export function MainPage({ resumeMinutes, onResumeHandled, onAddHistory }: Props
   // PiP表示中は他のタブで作業しながらでもアクティブ扱いにする
   const effectiveIsActive = isPipOpen || isActive;
 
+  const stage                = getCurrentStage(totalMinutes);
+  const totalAccumulatedTime = Math.floor(totalMinutes * 60);
+
   const worldRef = useRef<WorldPlayerHandle>(null);
-  const { getSessionId, getFrameCount, reset: resetFrames } = useFrameCapture({
+  const { getSessionId, getFrameCount, getLocalFrames, reset: resetFrames } = useFrameCapture({
     worldRef,
     isActive: effectiveIsActive,
     isRunning,
+    stage,
     accessToken,
   });
 
-  const stage    = getCurrentStage(totalMinutes);
-  const totalAccumulatedTime = Math.floor(totalMinutes * 60); // 整数秒
+  const screenCapture = useScreenCapture({ sessionId: getSessionId(), isRunning });
+
+  // 初回START時にスクリーンキャプチャのプロンプトを表示
+  useEffect(() => {
+    if (isRunning && !screenPromptShownRef.current && !screenCapture.isCapturing) {
+      screenPromptShownRef.current = true;
+      setShowScreenPrompt(true);
+    }
+  }, [isRunning, screenCapture.isCapturing]);
+
+  // タイムラプス生成用：スクリーンフレーム優先、なければワールドフレーム
+  async function getFramesForTimelapse(): Promise<Blob[]> {
+    const screen = await screenCapture.getFrames();
+    if (screen.length > 0) return screen;
+    return getLocalFrames();
+  }
 
   const currentPhaseIndex = WORLD_PHASES.reduce((acc, phase, index) =>
     (totalAccumulatedTime / 3600) >= phase.hours ? index : acc, 0
@@ -142,6 +164,8 @@ export function MainPage({ resumeMinutes, onResumeHandled, onAddHistory }: Props
     }
     resetAll();
     resetFrames();
+    screenCapture.reset();
+    screenPromptShownRef.current = false;
     setShowRestartConfirm(false);
   }
 
@@ -406,15 +430,57 @@ export function MainPage({ resumeMinutes, onResumeHandled, onAddHistory }: Props
 
       {showAuth && <AuthModal onClose={() => setShowAuth(false)} />}
 
+      {/* スクリーンキャプチャ：プロンプト */}
+      {showScreenPrompt && (
+        <ScreenCapturePrompt
+          onEnable={async () => {
+            setShowScreenPrompt(false);
+            await screenCapture.start();
+          }}
+          onSkip={() => setShowScreenPrompt(false)}
+        />
+      )}
+
+      {/* スクリーンキャプチャ：録画中バッジ */}
+      {screenCapture.isCapturing && (
+        <div
+          onClick={screenCapture.stop}
+          title="Click to stop screen recording"
+          style={{
+            position:      'absolute',
+            bottom:        180,
+            left:          40,
+            display:       'flex',
+            alignItems:    'center',
+            gap:           8,
+            padding:       '7px 14px',
+            borderRadius:  9999,
+            background:    'rgba(180,30,30,0.18)',
+            border:        '1px solid rgba(200,50,50,0.45)',
+            color:         'rgba(255,160,160,0.85)',
+            fontFamily:    "'Cinzel', serif",
+            fontSize:      10,
+            letterSpacing: '0.18em',
+            textTransform: 'uppercase',
+            cursor:        'pointer',
+            zIndex:        40,
+          }}
+        >
+          <span style={{ width: 7, height: 7, borderRadius: '50%', background: '#e05555', display: 'inline-block', animation: 'pulse 1.4s infinite' }} />
+          REC {screenCapture.frameCount}f · Stop
+        </div>
+      )}
+
       {showEndSession && (
         <EndSessionModal
           currentStage={stage}
           totalMinutes={totalMinutes}
           sessionSeconds={elapsedSeconds}
           sessionId={getSessionId()}
-          frameCount={getFrameCount()}
+          frameCount={getFrameCount() + screenCapture.frameCount}
+          getLocalFrames={getFramesForTimelapse}
           accessToken={accessToken}
-          onConfirm={() => { reset(); resetFrames(); }}
+          onConfirm={() => { reset(); resetFrames(); screenCapture.reset(); }}
           onClose={() => setShowEndSession(false)}
         />
       )}
