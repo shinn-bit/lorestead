@@ -117,9 +117,9 @@ export async function generateTimelapse(
 
   const itemCount = useCaptures ? bitmaps.length : videos.length;
 
-  // キャプチャフレームは全体で約12秒に収まるよう1枚あたりの表示時間を調整
+  // 常に合計12秒に収まるよう計算（最低16ms = rAF 1フレーム、最大1400ms）
   const frameDurationMs = useCaptures
-    ? Math.max(200, Math.min(1400, 12_000 / itemCount))
+    ? Math.max(16, Math.min(1400, 12_000 / itemCount))
     : STAGE_DURATION_MS;
 
   const canvas  = document.createElement('canvas');
