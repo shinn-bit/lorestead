@@ -91,9 +91,8 @@ export async function handler(event: APIGatewayProxyEvent): Promise<APIGatewayPr
       default:
         return err('Unknown action', 400);
     }
-  } catch (e: unknown) {
-    const message = e instanceof Error ? e.message : 'Internal error';
-    return err(message, 500);
+  } catch {
+    return err('Authentication request failed', 400);
   }
 }
 

@@ -63,11 +63,14 @@ export class LoresteadStack extends cdk.Stack {
     });
 
     // ─── Lambda共通設定 ────────────────────────────────────────
+    const allowedOrigin = process.env.CORS_ALLOWED_ORIGIN ?? 'https://lorestead.vercel.app';
+
     const lambdaEnv = {
       USERS_TABLE: usersTable.tableName,
       SESSIONS_TABLE: sessionsTable.tableName,
       WORLD_PROGRESS_TABLE: worldProgressTable.tableName,
       USER_POOL_ID: userPool.userPoolId,
+      CORS_ALLOWED_ORIGIN: allowedOrigin,
     };
 
     const lambdaRole = new iam.Role(this, 'LambdaRole', {
@@ -130,7 +133,7 @@ export class LoresteadStack extends cdk.Stack {
     const api = new apigateway.RestApi(this, 'LoresteadApi', {
       restApiName: 'lorestead-api',
       defaultCorsPreflightOptions: {
-        allowOrigins: apigateway.Cors.ALL_ORIGINS,
+        allowOrigins: [allowedOrigin],
         allowMethods: apigateway.Cors.ALL_METHODS,
         allowHeaders: ['Content-Type', 'Authorization'],
       },
