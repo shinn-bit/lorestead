@@ -1,5 +1,4 @@
 import { useState, useEffect, useRef } from 'react';
-import { timelapseApi } from '../../api/client';
 import { generateTimelapse, downloadBlob } from '../../utils/timelapse';
 import { saveTimelapse } from '../../utils/timelapseStore';
 import type { GrowthMode } from '../../utils/stageCalculator';
@@ -16,14 +15,13 @@ interface Props {
   frameCount: number;
   /** IndexedDBからローカルフレームを取得する関数 */
   getLocalFrames: () => Promise<Blob[]>;
-  accessToken: string | null;
   onClose: () => void;
   onConfirm: () => void;
 }
 
 export function EndSessionModal({
   mode, currentStage, totalMinutes, sessionSeconds, isCompleted,
-  sessionId, frameCount, getLocalFrames, accessToken,
+  sessionId, frameCount, getLocalFrames,
   onClose, onConfirm,
 }: Props) {
   const [phase, setPhase]       = useState<Phase>('confirm');
@@ -32,9 +30,6 @@ export function EndSessionModal({
   const [blob, setBlob]         = useState<Blob | null>(null);
   const [error, setError]       = useState('');
   const videoRef                = useRef<HTMLVideoElement>(null);
-
-  // サーバー生成の場合はURLをそのまま使う
-  const isServerGeneration = !!accessToken && frameCount > 0;
 
   // 生成した動画をローカル履歴(IndexedDB)に保存
   async function persistToHistory(videoBlob: Blob | null) {
@@ -64,41 +59,19 @@ export function EndSessionModal({
     setError('');
 
     try {
-      if (isServerGeneration) {
-        // ─── サーバー側生成（S3フレーム → Lambda FFmpeg） ───
-        setProgress(20);
-        const { downloadUrl } = await timelapseApi.generate(
-          accessToken,
-          sessionId,
-          frameCount,
-          totalMinutes,
-          sessionSeconds,
-        );
-        setProgress(100);
-        setVideoUrl(downloadUrl);
-        setBlob(null); // presigned URLなのでBlob不要
-        // ローカル履歴にも保存（取得できなければスキップ）
-        try {
-          const resp = await fetch(downloadUrl);
-          if (resp.ok) await persistToHistory(await resp.blob());
-        } catch (e) {
-          console.error('Failed to fetch generated video for history', e);
-        }
-      } else {
-        // ─── ブラウザ側生成（ローカルキャプチャフレーム → なければ動画フォールバック） ───
-        const localFrames = await getLocalFrames();
-        const result = await generateTimelapse(
-          currentStage,
-          totalMinutes,
-          sessionSeconds,
-          localFrames,
-          (ratio) => setProgress(Math.round(ratio * 100)),
-        );
-        const url = URL.createObjectURL(result);
-        setBlob(result);
-        setVideoUrl(url);
-        await persistToHistory(result);
-      }
+      // ブラウザ側生成（ローカルキャプチャフレーム → なければ動画フォールバック）
+      const localFrames = await getLocalFrames();
+      const result = await generateTimelapse(
+        currentStage,
+        totalMinutes,
+        sessionSeconds,
+        localFrames,
+        (ratio) => setProgress(Math.round(ratio * 100)),
+      );
+      const url = URL.createObjectURL(result);
+      setBlob(result);
+      setVideoUrl(url);
+      await persistToHistory(result);
 
       setPhase('done');
       onConfirm();
@@ -115,18 +88,9 @@ export function EndSessionModal({
   }
 
   function handleDownload() {
-    if (!videoUrl) return;
-    if (blob) {
-      // ブラウザ生成Blob
-      const date = new Date().toISOString().slice(0, 10);
-      downloadBlob(blob, `lorestead_${date}.webm`);
-    } else {
-      // サーバー生成presigned URL → 直接リンク
-      const a = document.createElement('a');
-      a.href = videoUrl;
-      a.download = `lorestead_${new Date().toISOString().slice(0, 10)}.mp4`;
-      a.click();
-    }
+    if (!blob) return;
+    const date = new Date().toISOString().slice(0, 10);
+    downloadBlob(blob, `lorestead_${date}.webm`);
   }
 
   return (
@@ -152,7 +116,7 @@ export function EndSessionModal({
             <div className="flex flex-col gap-3 mt-2">
               <button
                 onClick={handleGenerate}
-                disabled={!isServerGeneration && !currentStage}
+                disabled={currentStage < 1}
                 className="w-full py-4 rounded-full border border-[#d4af37]/70 text-[#f5e6d3] tracking-[0.2em] text-sm uppercase transition-all hover:bg-[#d4af37]/15 font-serif disabled:opacity-30 disabled:cursor-not-allowed"
               >
                 Generate Timelapse & End
@@ -186,7 +150,7 @@ export function EndSessionModal({
               Generating...
             </h2>
             <p className="text-center text-sm text-[#f5e6d3]/50 tracking-widest">
-              {isServerGeneration ? 'Processing on server with FFmpeg' : 'Creating your timelapse'}
+              Creating your timelapse
             </p>
 
             <div className="w-full h-2 bg-white/10 rounded-full overflow-hidden">

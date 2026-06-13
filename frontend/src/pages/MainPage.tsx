@@ -2,12 +2,10 @@ import { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { useTimer } from '../hooks/useTimer';
 import { useVisibility } from '../hooks/useVisibility';
-import { useAuth } from '../context/AuthContext';
 import { useGrowthConfig } from '../hooks/useGrowthConfig';
 import { getStage, getOverallProgress, MAX_STAGE } from '../utils/stageCalculator';
 import { WorldPlayer } from '../components/World/WorldPlayer';
 import type { WorldPlayerHandle } from '../components/World/WorldPlayer';
-import { AuthModal } from '../components/Auth/AuthModal';
 import { EndSessionModal } from '../components/EndSession/EndSessionModal';
 import { SetupScreen } from './SetupScreen';
 import { MiniPlayer, PiPView } from '../components/MiniPlayer/MiniPlayer';
@@ -31,10 +29,8 @@ function formatTime(seconds: number, showHours = false): string {
 export function MainPage() {
   const { isRunning, elapsedSeconds, totalMinutes, start, pause, reset, resetAll } = useTimer();
   const { isActive } = useVisibility();
-  const { isLoggedIn, accessToken, signOut, syncProgress } = useAuth();
   const { config, setTimeMode, setTaskMode, setFreeMode, toggleTask, clearConfig } = useGrowthConfig();
 
-  const [showAuth, setShowAuth]                     = useState(false);
   const [showEndSession, setShowEndSession]         = useState(false);
   const [showRestartConfirm, setShowRestartConfirm] = useState(false);
   const [isMini, setIsMini]                         = useState(false);
@@ -55,7 +51,6 @@ export function MainPage() {
     isActive: effectiveIsActive,
     isRunning,
     stage,
-    accessToken,
   });
 
   const screenCapture = useScreenCapture({ sessionId: getSessionId(), isRunning });
@@ -67,14 +62,6 @@ export function MainPage() {
       setShowScreenPrompt(true);
     }
   }, [isRunning, screenCapture.isCapturing]);
-
-  const prevRunning = useRef(false);
-  useEffect(() => {
-    if (prevRunning.current && !isRunning && elapsedSeconds > 0) {
-      syncProgress(elapsedSeconds / 60).catch(() => {});
-    }
-    prevRunning.current = isRunning;
-  }, [isRunning, elapsedSeconds, syncProgress]);
 
   // ── config 未設定：Setup 画面 ──
   if (!config) {
@@ -350,49 +337,6 @@ export function MainPage() {
         )}
       </div>
 
-      {/* サインイン / サインアウト */}
-      <div className="absolute bottom-8 right-10 z-10">
-        {isLoggedIn ? (
-          <button
-            onClick={signOut}
-            style={{
-              background: 'transparent',
-              border: '1px solid rgba(245,230,211,0.15)',
-              color: 'rgba(245,230,211,0.4)',
-              fontFamily: "'Cinzel', serif",
-              fontSize: '11px',
-              letterSpacing: '0.2em',
-              textTransform: 'uppercase',
-              padding: '8px 20px',
-              borderRadius: '9999px',
-              cursor: 'pointer',
-            }}
-          >
-            Sign Out
-          </button>
-        ) : (
-          <button
-            onClick={() => setShowAuth(true)}
-            style={{
-              background: 'rgba(212,175,55,0.12)',
-              border: '1px solid rgba(212,175,55,0.45)',
-              color: '#f5e6d3',
-              fontFamily: "'Cinzel', serif",
-              fontSize: '12px',
-              letterSpacing: '0.2em',
-              textTransform: 'uppercase',
-              padding: '12px 28px',
-              borderRadius: '9999px',
-              cursor: 'pointer',
-            }}
-          >
-            Sign In to Save Progress
-          </button>
-        )}
-      </div>
-
-      {showAuth && <AuthModal onClose={() => setShowAuth(false)} />}
-
       {/* スクリーンキャプチャ：プロンプト */}
       {showScreenPrompt && (
         <ScreenCapturePrompt
@@ -444,7 +388,6 @@ export function MainPage() {
           sessionId={getSessionId()}
           frameCount={getFrameCount() + screenCapture.frameCount}
           getLocalFrames={getFramesForTimelapse}
-          accessToken={accessToken}
           onConfirm={() => { reset(); resetFrames(); screenCapture.reset(); }}
           onClose={() => setShowEndSession(false)}
         />
