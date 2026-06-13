@@ -2,34 +2,18 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 
 export type ActivityType = 'study' | 'work' | 'creative' | 'other';
 
-const STORAGE_KEY = 'lorestead_total_minutes';
-
-function loadSavedMinutes(): number {
-  try {
-    const v = localStorage.getItem(STORAGE_KEY);
-    return v ? parseFloat(v) : 0;
-  } catch {
-    return 0;
-  }
-}
-
-function saveMinutes(minutes: number) {
-  try {
-    localStorage.setItem(STORAGE_KEY, String(minutes));
-  } catch {}
-}
+// 進捗の継承はしない方針：localStorage には保存せず、毎セッション 0 から計測する。
+// totalMinutes は「現在セッションの経過分」と一致する（= elapsedSeconds / 60）。
 
 export function useTimer() {
   const [isRunning, setIsRunning] = useState(false);
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
-  // totalMinutes = saved baseline + current session elapsed
-  const [totalMinutes, setTotalMinutes] = useState<number>(() => loadSavedMinutes());
+  const [totalMinutes, setTotalMinutes] = useState<number>(0);
   const [activityType, setActivityType] = useState<ActivityType>('study');
 
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const runStartTimeRef = useRef<number>(0);      // Date.now() when current run began
   const runStartElapsedRef = useRef<number>(0);   // elapsedSeconds when current run began
-  const baselineMinutesRef = useRef<number>(totalMinutes); // saved total when session started
 
   useEffect(() => {
     if (!isRunning) {
@@ -41,10 +25,7 @@ export function useTimer() {
       const nowDelta = Math.floor((Date.now() - runStartTimeRef.current) / 1000);
       const newElapsed = runStartElapsedRef.current + nowDelta;
       setElapsedSeconds(newElapsed);
-
-      const newTotal = baselineMinutesRef.current + newElapsed / 60;
-      setTotalMinutes(newTotal);
-      saveMinutes(newTotal);
+      setTotalMinutes(newElapsed / 60);
     }, 1000);
 
     return () => {
@@ -55,7 +36,6 @@ export function useTimer() {
   const start = useCallback(() => {
     runStartTimeRef.current = Date.now();
     runStartElapsedRef.current = elapsedSeconds;
-    baselineMinutesRef.current = loadSavedMinutes();
     setIsRunning(true);
   }, [elapsedSeconds]);
 
@@ -66,6 +46,7 @@ export function useTimer() {
   const reset = useCallback(() => {
     setIsRunning(false);
     setElapsedSeconds(0);
+    setTotalMinutes(0);
     runStartElapsedRef.current = 0;
   }, []);
 
@@ -74,18 +55,14 @@ export function useTimer() {
     setElapsedSeconds(0);
     runStartElapsedRef.current = 0;
     setTotalMinutes(0);
-    saveMinutes(0);
-    baselineMinutesRef.current = 0;
   }, []);
 
   // Debug: jump to arbitrary total minutes
   const debugSetMinutes = useCallback((minutes: number) => {
     setIsRunning(false);
-    setElapsedSeconds(0);
-    runStartElapsedRef.current = 0;
+    setElapsedSeconds(Math.round(minutes * 60));
+    runStartElapsedRef.current = Math.round(minutes * 60);
     setTotalMinutes(minutes);
-    saveMinutes(minutes);
-    baselineMinutesRef.current = minutes;
   }, []);
 
   return {
