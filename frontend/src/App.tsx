@@ -5,7 +5,7 @@ import { HistoryPage, type HistoryItem } from './pages/HistoryPage';
 import { AuthModal } from './components/Auth/AuthModal';
 import { useAuth } from './context/AuthContext';
 import { sessionsApi } from './api/client';
-import { getCurrentStage } from './utils/stageCalculator';
+import { getCurrentStage, MAX_STAGE } from './utils/stageCalculator';
 
 export type View = 'home' | 'history';
 
@@ -62,7 +62,7 @@ export default function App() {
           totalMinutes: cumulative,
           sessionMinutes: s.durationMinutes,
           stage,
-          isCompleted: stage === 9,
+          isCompleted: stage === MAX_STAGE,
         };
       });
       setHistoryItems(items.reverse()); // 新しい順に表示

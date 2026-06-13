@@ -64,25 +64,12 @@ export const WorldPlayer = forwardRef<WorldPlayerHandle, Props>(function WorldPl
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // stage 9 の静止画オーバーレイ
-  const [imageOpacity, setImageOpacity] = useState(0);
-  const imageConfig = getVideoConfig(9);
-
   // ---------- Stage 変化 → canplay 待ちクロスフェード ----------
   useEffect(() => {
     if (prevStageRef.current === 0 || prevStageRef.current === stage) return;
     prevStageRef.current = stage;
 
     cleanupRef.current?.();
-
-    // Stage 9 → 静止画をフェードイン
-    if (stage === 9) {
-      setImageOpacity(1);
-      return;
-    }
-
-    // Stage 9 から戻る場合（デバッグ用）
-    setImageOpacity(0);
 
     const isFrontA = aIsFrontRef.current;
     const back = isFrontA ? videoBRef.current : videoARef.current;
@@ -165,20 +152,6 @@ export const WorldPlayer = forwardRef<WorldPlayerHandle, Props>(function WorldPl
         className="absolute inset-0 w-full h-full object-cover"
         style={{ ...bStyle, filter: brightness }}
       />
-      {/* Stage 9: 静止画オーバーレイ */}
-      {imageConfig.imageSrc && (
-        <img
-          src={imageConfig.imageSrc}
-          alt="Prague complete"
-          className="absolute inset-0 w-full h-full object-cover"
-          style={{
-            opacity: imageOpacity,
-            transition: `opacity ${FADE_MS}ms ease`,
-            zIndex: 15,
-          }}
-        />
-      )}
-
       {/* 先読み専用 (非表示) */}
       <video ref={preloadRef} muted playsInline preload="auto" className="hidden" />
 

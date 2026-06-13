@@ -1,4 +1,4 @@
-import { getVideoConfig } from './stageCalculator';
+import { getVideoConfig, MAX_STAGE } from './stageCalculator';
 
 const CANVAS_SIZE       = 1080;
 const STAGE_DURATION_MS = 1400; // フォールバック時（動画）の1ステージあたり表示時間
@@ -9,7 +9,7 @@ const OUTRO_DURATION_MS = 1000;
 
 function getStageSrc(stage: number): string {
   const config = getVideoConfig(stage);
-  return config.loopSrc ?? (getVideoConfig(8).loopSrc as string);
+  return config.loopSrc ?? (getVideoConfig(MAX_STAGE).loopSrc as string);
 }
 
 function loadVideoForPlayback(src: string): Promise<HTMLVideoElement | null> {
@@ -105,7 +105,7 @@ export async function generateTimelapse(
     bitmaps = await Promise.all(capturedFrames.map(b => createImageBitmap(b)));
   } else {
     // フォールバック：ステージ動画をロード
-    const stageCount = Math.max(1, Math.min(currentStage, 9));
+    const stageCount = Math.max(1, Math.min(currentStage, MAX_STAGE));
     videos = await Promise.all(
       Array.from({ length: stageCount }, (_, i) =>
         loadVideoForPlayback(getStageSrc(i + 1))

@@ -1,10 +1,10 @@
 import { useEffect, useRef } from 'react';
 import { useDraggable } from '../../hooks/useDraggable';
-import { getVideoConfig } from '../../utils/stageCalculator';
+import { getVideoConfig, MAX_STAGE } from '../../utils/stageCalculator';
 
 function getLoopSrc(stage: number): string {
   const config = getVideoConfig(stage);
-  return config.loopSrc ?? (getVideoConfig(8).loopSrc as string);
+  return config.loopSrc ?? (getVideoConfig(MAX_STAGE).loopSrc as string);
 }
 
 // ── PiP window content (no dragging — OS handles window dragging) ──────────
