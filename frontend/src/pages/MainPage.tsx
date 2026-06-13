@@ -3,12 +3,13 @@ import { createPortal } from 'react-dom';
 import { useTimer } from '../hooks/useTimer';
 import { useVisibility } from '../hooks/useVisibility';
 import { useAuth } from '../context/AuthContext';
-import { getCurrentStage, MAX_STAGE } from '../utils/stageCalculator';
+import { useGrowthConfig } from '../hooks/useGrowthConfig';
+import { getStage, getOverallProgress, MAX_STAGE } from '../utils/stageCalculator';
 import { WorldPlayer } from '../components/World/WorldPlayer';
 import type { WorldPlayerHandle } from '../components/World/WorldPlayer';
-import type { HistoryItem } from './HistoryPage';
 import { AuthModal } from '../components/Auth/AuthModal';
 import { EndSessionModal } from '../components/EndSession/EndSessionModal';
+import { SetupScreen } from './SetupScreen';
 import { MiniPlayer, PiPView } from '../components/MiniPlayer/MiniPlayer';
 import { useFrameCapture } from '../hooks/useFrameCapture';
 import { useScreenCapture } from '../hooks/useScreenCapture';
@@ -27,28 +28,12 @@ function formatTime(seconds: number, showHours = false): string {
   return `${m.toString().padStart(2, '0')}:${sec.toString().padStart(2, '0')}`;
 }
 
-// 変更点：名前が変わる機能を無くしたため、hoursだけのシンプルな配列に変更
-const WORLD_PHASES = [
-  { hours: 0 },
-  { hours: 1 },
-  { hours: 3 },
-  { hours: 5 },
-  { hours: 8 },
-  { hours: 12 },
-  { hours: 16 },
-  { hours: 20 },
-];
-
-interface Props {
-  resumeMinutes: number | null;
-  onResumeHandled: () => void;
-  onAddHistory: (item: HistoryItem) => void;
-}
-
-export function MainPage({ resumeMinutes, onResumeHandled, onAddHistory }: Props) {
-  const { isRunning, elapsedSeconds, totalMinutes, start, pause, reset, resetAll, debugSetMinutes } = useTimer();
+export function MainPage() {
+  const { isRunning, elapsedSeconds, totalMinutes, start, pause, reset, resetAll } = useTimer();
   const { isActive } = useVisibility();
   const { isLoggedIn, accessToken, signOut, syncProgress } = useAuth();
+  const { config, setTimeMode, setTaskMode, setFreeMode, toggleTask, clearConfig } = useGrowthConfig();
+
   const [showAuth, setShowAuth]                     = useState(false);
   const [showEndSession, setShowEndSession]         = useState(false);
   const [showRestartConfirm, setShowRestartConfirm] = useState(false);
@@ -57,18 +42,11 @@ export function MainPage({ resumeMinutes, onResumeHandled, onAddHistory }: Props
   const screenPromptShownRef                        = useRef(false);
   const { pipWindow, isSupported: isPipSupported, open: openPip, close: closePip, isOpen: isPipOpen } = usePictureInPicture(280, 210);
 
-  // History画面からのResume
-  useEffect(() => {
-    if (resumeMinutes !== null) {
-      debugSetMinutes(resumeMinutes);
-      onResumeHandled();
-    }
-  }, [resumeMinutes, debugSetMinutes, onResumeHandled]);
-
   // PiP表示中は他のタブで作業しながらでもアクティブ扱いにする
   const effectiveIsActive = isPipOpen || isActive;
 
-  const stage                = getCurrentStage(totalMinutes);
+  // 現在の stage（config 未設定時は 1）
+  const stage                = config ? getStage(config, totalMinutes) : 1;
   const totalAccumulatedTime = Math.floor(totalMinutes * 60);
 
   const worldRef = useRef<WorldPlayerHandle>(null);
@@ -90,22 +68,6 @@ export function MainPage({ resumeMinutes, onResumeHandled, onAddHistory }: Props
     }
   }, [isRunning, screenCapture.isCapturing]);
 
-  // タイムラプス生成用：スクリーンフレーム優先、なければワールドフレーム
-  async function getFramesForTimelapse(): Promise<Blob[]> {
-    const screen = await screenCapture.getFrames();
-    if (screen.length > 0) return screen;
-    return getLocalFrames();
-  }
-
-  const currentPhaseIndex = WORLD_PHASES.reduce((acc, phase, index) =>
-    (totalAccumulatedTime / 3600) >= phase.hours ? index : acc, 0
-  );
-  
-  const currentPhase  = WORLD_PHASES[currentPhaseIndex];
-  const nextPhase     = WORLD_PHASES[currentPhaseIndex + 1] || currentPhase;
-  const phaseProgress = currentPhase === nextPhase ? 100 :
-    (((totalAccumulatedTime / 3600) - currentPhase.hours) / (nextPhase.hours - currentPhase.hours)) * 100;
-
   const prevRunning = useRef(false);
   useEffect(() => {
     if (prevRunning.current && !isRunning && elapsedSeconds > 0) {
@@ -113,6 +75,27 @@ export function MainPage({ resumeMinutes, onResumeHandled, onAddHistory }: Props
     }
     prevRunning.current = isRunning;
   }, [isRunning, elapsedSeconds, syncProgress]);
+
+  // ── config 未設定：Setup 画面 ──
+  if (!config) {
+    return (
+      <SetupScreen
+        onStartTime={(targetMinutes) => { reset(); setTimeMode(targetMinutes); }}
+        onStartTasks={(labels) => { reset(); setTaskMode(labels); }}
+        onStartFree={() => { reset(); setFreeMode(); }}
+      />
+    );
+  }
+
+  const overallProgress = getOverallProgress(config, totalMinutes) * 100;
+  const isTaskMode = config.mode === 'task';
+
+  // タイムラプス生成用：スクリーンフレーム優先、なければワールドフレーム
+  async function getFramesForTimelapse(): Promise<Blob[]> {
+    const screen = await screenCapture.getFrames();
+    if (screen.length > 0) return screen;
+    return getLocalFrames();
+  }
 
   async function handleSubScreen() {
     if (isPipOpen) { closePip(); return; }
@@ -125,25 +108,14 @@ export function MainPage({ resumeMinutes, onResumeHandled, onAddHistory }: Props
     }
   }
 
+  // Restart：すべて初期化して Setup 画面に戻す
   function handleRestart() {
-    // 現在のセッションを履歴に追加してからリセット
-    if (totalMinutes > 0) {
-      const now = new Date();
-      const dateStr = `${now.getFullYear()}/${String(now.getMonth() + 1).padStart(2, '0')}/${String(now.getDate()).padStart(2, '0')}  ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
-      onAddHistory({
-        id: String(Date.now()),
-        date: dateStr,
-        totalMinutes,
-        sessionMinutes: Math.round(elapsedSeconds / 60),
-        stage,
-        isCompleted: stage === MAX_STAGE,
-      });
-    }
     resetAll();
     resetFrames();
     screenCapture.reset();
     screenPromptShownRef.current = false;
     setShowRestartConfirm(false);
+    clearConfig();
   }
 
   // ミニモード中はMiniPlayerだけ表示
@@ -173,15 +145,14 @@ export function MainPage({ resumeMinutes, onResumeHandled, onAddHistory }: Props
       ══════════════════════════════════ */}
       <div className="absolute top-24 left-10 z-10 flex flex-col gap-4 w-72">
         <div className="flex justify-between text-sm tracking-widest font-semibold text-[#f5e6d3]/90 uppercase">
-          {/* 変更点：全フェーズ共通で「MEDIEVAL TOWN」と表示 */}
           <span style={{ fontFamily: "'Cinzel', serif" }}>MEDIEVAL TOWN</span>
-          <span className="text-[#d4af37]" style={{ fontFamily: "'Cinzel', serif" }}>PHASE {currentPhaseIndex + 1}</span>
+          <span className="text-[#d4af37]" style={{ fontFamily: "'Cinzel', serif" }}>PHASE {stage} / {MAX_STAGE}</span>
         </div>
 
         <div className="h-3 w-full bg-[#2a2d33] flex items-center p-0.5">
           <div
             className="h-full bg-[#f5e6d3] transition-all duration-1000"
-            style={{ width: `${phaseProgress}%` }}
+            style={{ width: `${overallProgress}%` }}
           />
         </div>
 
@@ -222,6 +193,72 @@ export function MainPage({ resumeMinutes, onResumeHandled, onAddHistory }: Props
           {isPipOpen ? 'Close Sub Screen' : (isMini ? 'Restore' : 'Sub Screen')}
         </button>
       </div>
+
+      {/* ══════════════════════════════════
+          右上：タスクモードのチェックリスト
+      ══════════════════════════════════ */}
+      {isTaskMode && (
+        <div
+          className="absolute z-10 flex flex-col gap-2"
+          style={{ top: 96, right: 40, width: 260, maxHeight: 'calc(100dvh - 220px)' }}
+        >
+          <div
+            className="flex items-center justify-between"
+            style={{ fontFamily: "'Cinzel', serif", fontSize: 12, letterSpacing: '0.15em', color: 'rgba(245,230,211,0.7)', textTransform: 'uppercase' }}
+          >
+            <span>Tasks</span>
+            <span style={{ color: '#d4af37' }}>
+              {config.tasks.filter((t) => t.done).length} / {config.tasks.length}
+            </span>
+          </div>
+          <div className="flex flex-col gap-2 overflow-y-auto custom-scrollbar" style={{ paddingRight: 2 }}>
+            {config.tasks.map((task) => (
+              <button
+                key={task.id}
+                onClick={() => toggleTask(task.id)}
+                className="flex items-center gap-3 text-left transition-all"
+                style={{
+                  background: task.done ? 'rgba(212,175,55,0.12)' : 'rgba(0,0,0,0.4)',
+                  border: task.done ? '1px solid rgba(212,175,55,0.45)' : '1px solid rgba(255,255,255,0.1)',
+                  borderRadius: 12,
+                  padding: '10px 14px',
+                  cursor: 'pointer',
+                  backdropFilter: 'blur(6px)',
+                }}
+              >
+                <span
+                  style={{
+                    width: 18,
+                    height: 18,
+                    borderRadius: 6,
+                    flexShrink: 0,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: 12,
+                    background: task.done ? '#d4af37' : 'transparent',
+                    border: task.done ? 'none' : '1px solid rgba(245,230,211,0.4)',
+                    color: '#1a1c20',
+                  }}
+                >
+                  {task.done ? '✓' : ''}
+                </span>
+                <span
+                  style={{
+                    fontFamily: 'sans-serif',
+                    fontSize: 13,
+                    color: task.done ? 'rgba(245,230,211,0.5)' : '#f5e6d3',
+                    textDecoration: task.done ? 'line-through' : 'none',
+                    lineHeight: 1.3,
+                  }}
+                >
+                  {task.label}
+                </span>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* ══════════════════════════════════
           左下：START / END SESSION ボタン
@@ -271,7 +308,7 @@ export function MainPage({ resumeMinutes, onResumeHandled, onAddHistory }: Props
               letterSpacing: '0.1em',
               textAlign: 'center',
             }}>
-              Reset everything from scratch?
+              Reset and choose a new goal?
             </p>
             <div style={{ display: 'flex', gap: '8px' }}>
               <button
@@ -399,9 +436,11 @@ export function MainPage({ resumeMinutes, onResumeHandled, onAddHistory }: Props
 
       {showEndSession && (
         <EndSessionModal
+          mode={config.mode}
           currentStage={stage}
           totalMinutes={totalMinutes}
           sessionSeconds={elapsedSeconds}
+          isCompleted={stage >= MAX_STAGE}
           sessionId={getSessionId()}
           frameCount={getFrameCount() + screenCapture.frameCount}
           getLocalFrames={getFramesForTimelapse}

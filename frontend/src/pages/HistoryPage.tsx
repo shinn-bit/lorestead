@@ -1,13 +1,15 @@
-import { useRef, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
+import { listTimelapses, deleteTimelapse, type TimelapseRecord } from '../utils/timelapseStore';
+import { downloadBlob } from '../utils/timelapse';
 
-export interface HistoryItem {
-  id: string;
-  date: string;
-  totalMinutes: number;
-  sessionMinutes: number;
-  stage: number;
-  isCompleted: boolean;
-  timelapseUrl?: string;
+interface CardData extends TimelapseRecord {
+  url: string; // object URL（描画用）
+}
+
+function formatDate(ts: number): string {
+  const d = new Date(ts);
+  const p = (n: number) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}/${p(d.getMonth() + 1)}/${p(d.getDate())}  ${p(d.getHours())}:${p(d.getMinutes())}`;
 }
 
 function formatDuration(minutes: number): string {
@@ -17,67 +19,63 @@ function formatDuration(minutes: number): string {
   return `${m}m`;
 }
 
-function StageThumbnail({ stage }: { stage: number }) {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
+const MODE_LABEL: Record<TimelapseRecord['mode'], string> = {
+  time: 'Time',
+  task: 'Tasks',
+  free: 'Free',
+};
 
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-
-    const video = document.createElement('video');
-    video.muted = true;
-    video.playsInline = true;
-    video.crossOrigin = 'anonymous';
-    video.src = `/assets/worlds/town/stage_0${stage}.mp4`;
-
-    video.addEventListener('loadedmetadata', () => {
-      video.currentTime = Math.min(1.0, video.duration * 0.3);
-    }, { once: true });
-
-    video.addEventListener('seeked', () => {
-      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-    }, { once: true });
-
-    video.addEventListener('error', () => {
-      const grad = ctx.createLinearGradient(0, 0, 0, canvas.height);
-      grad.addColorStop(0, '#1e2128');
-      grad.addColorStop(1, '#0f1114');
-      ctx.fillStyle = grad;
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
-    }, { once: true });
-
-    video.load();
-  }, [stage]);
-
-  return (
-    <canvas ref={canvasRef} width={440} height={440} className="history-card-thumb" />
-  );
-}
-
-interface Props {
-  items: HistoryItem[];
-  loading: boolean;
-  isLoggedIn: boolean;
-  onResume: (totalMinutes: number) => void;
-  onDelete: (id: string) => void;
-  onSignIn: () => void;
-}
-
-export function HistoryPage({ items, loading, isLoggedIn, onResume, onDelete, onSignIn }: Props) {
+export function HistoryPage() {
+  const [cards, setCards] = useState<CardData[] | null>(null);
   const [confirmingId, setConfirmingId] = useState<string | null>(null);
 
-  function handleDownload(item: HistoryItem) {
-    if (!item.timelapseUrl) return;
-    const a = document.createElement('a');
-    a.href = item.timelapseUrl;
-    a.download = `lorestead_${item.date.replace(/[/ :]/g, '-')}.mp4`;
-    a.click();
+  useEffect(() => {
+    const urls: string[] = [];
+    let cancelled = false;
+
+    listTimelapses()
+      .then((records) => {
+        if (cancelled) return;
+        const data = records.map((r) => {
+          const url = URL.createObjectURL(r.blob);
+          urls.push(url);
+          return { ...r, url };
+        });
+        setCards(data);
+      })
+      .catch((e) => {
+        console.error('Failed to load timelapses', e);
+        if (!cancelled) setCards([]);
+      });
+
+    return () => {
+      cancelled = true;
+      urls.forEach((u) => URL.revokeObjectURL(u));
+    };
+  }, []);
+
+  function handleDownload(card: CardData) {
+    const date = formatDate(card.createdAt).replace(/[/ :]/g, '-');
+    const ext = card.blob.type.includes('mp4') ? 'mp4' : 'webm';
+    downloadBlob(card.blob, `lorestead_${date}.${ext}`);
+  }
+
+  async function handleDelete(id: string) {
+    try {
+      await deleteTimelapse(id);
+    } catch (e) {
+      console.error('Failed to delete timelapse', e);
+    }
+    setCards((prev) => {
+      const target = prev?.find((c) => c.id === id);
+      if (target) URL.revokeObjectURL(target.url);
+      return prev ? prev.filter((c) => c.id !== id) : prev;
+    });
+    setConfirmingId(null);
   }
 
   // ローディング中
-  if (loading) {
+  if (cards === null) {
     return (
       <div className="absolute inset-0 flex items-center justify-center">
         <p style={{ fontFamily: "'Cinzel', serif", fontSize: '13px', color: 'rgba(245,230,211,0.4)', letterSpacing: '0.2em' }}>
@@ -87,58 +85,15 @@ export function HistoryPage({ items, loading, isLoggedIn, onResume, onDelete, on
     );
   }
 
-  // 未ログイン
-  if (!isLoggedIn) {
-    return (
-      <div className="absolute inset-0 flex flex-col items-center justify-center gap-6">
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px' }}>
-          <p style={{
-            fontFamily: "'Cinzel', serif",
-            fontSize: '18px',
-            color: '#f5e6d3',
-            letterSpacing: '0.15em',
-            textTransform: 'uppercase',
-          }}>
-            Your History
-          </p>
-          <p style={{
-            fontFamily: 'sans-serif',
-            fontSize: '13px',
-            color: 'rgba(245,230,211,0.45)',
-            letterSpacing: '0.05em',
-            textAlign: 'center',
-            lineHeight: '1.6',
-          }}>
-            Sign in to save your sessions<br />and track your world's growth over time.
-          </p>
-        </div>
-        <button
-          onClick={onSignIn}
-          style={{
-            background: 'rgba(212,175,55,0.12)',
-            border: '1px solid rgba(212,175,55,0.5)',
-            color: '#f5e6d3',
-            fontFamily: "'Cinzel', serif",
-            fontSize: '12px',
-            letterSpacing: '0.2em',
-            textTransform: 'uppercase',
-            padding: '14px 36px',
-            borderRadius: '9999px',
-            cursor: 'pointer',
-          }}
-        >
-          Sign In
-        </button>
-      </div>
-    );
-  }
-
   // データなし
-  if (items.length === 0) {
+  if (cards.length === 0) {
     return (
-      <div className="absolute inset-0 flex flex-col items-center justify-center gap-4">
-        <p style={{ fontFamily: "'Cinzel', serif", fontSize: '13px', color: 'rgba(245,230,211,0.4)', letterSpacing: '0.15em' }}>
-          No sessions yet. Start your first session.
+      <div className="absolute inset-0 flex flex-col items-center justify-center gap-3">
+        <p style={{ fontFamily: "'Cinzel', serif", fontSize: '15px', color: 'rgba(245,230,211,0.6)', letterSpacing: '0.15em', textTransform: 'uppercase' }}>
+          Your Timelapses
+        </p>
+        <p style={{ fontFamily: 'sans-serif', fontSize: '13px', color: 'rgba(245,230,211,0.4)', letterSpacing: '0.04em', textAlign: 'center', lineHeight: 1.6 }}>
+          No timelapses yet.<br />Finish a session and generate one to see it here.
         </p>
       </div>
     );
@@ -147,77 +102,70 @@ export function HistoryPage({ items, loading, isLoggedIn, onResume, onDelete, on
   return (
     <div
       className="absolute inset-0 overflow-y-auto custom-scrollbar"
-      style={{ padding: '96px 40px 0' }}
+      style={{ padding: '96px 40px 40px' }}
     >
       <div className="history-grid">
-        {items.map((item) => (
-          <div key={item.id} className="history-card">
+        {cards.map((card) => (
+          <div key={card.id} className="history-card">
 
-            {/* ── サムネイルカード ── */}
+            {/* ── 動画プレビュー ── */}
             <div className="history-card-image">
-              <StageThumbnail stage={item.stage} />
+              <video
+                src={card.url}
+                muted
+                loop
+                autoPlay
+                playsInline
+                className="history-card-thumb"
+                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+              />
 
               {/* 削除ボタン */}
               <button
                 className="history-card-delete"
-                onClick={(e) => { e.stopPropagation(); setConfirmingId(item.id); }}
+                onClick={(e) => { e.stopPropagation(); setConfirmingId(card.id); }}
                 title="Delete"
               >
                 ×
               </button>
 
               {/* 削除確認オーバーレイ */}
-              {confirmingId === item.id && (
+              {confirmingId === card.id && (
                 <div className="history-card-confirm">
-                  <p>Delete this session?</p>
+                  <p>Delete this timelapse?</p>
                   <div className="history-confirm-btns">
-                    <button
-                      className="history-confirm-cancel"
-                      onClick={() => setConfirmingId(null)}
-                    >
+                    <button className="history-confirm-cancel" onClick={() => setConfirmingId(null)}>
                       Cancel
                     </button>
-                    <button
-                      className="history-confirm-delete"
-                      onClick={() => { onDelete(item.id); setConfirmingId(null); }}
-                    >
+                    <button className="history-confirm-delete" onClick={() => handleDelete(card.id)}>
                       Delete
                     </button>
                   </div>
                 </div>
               )}
 
-              {/* ホバー時アクションオーバーレイ（確認中は非表示） */}
-              {confirmingId !== item.id && (
+              {/* ホバー時アクション（確認中は非表示） */}
+              {confirmingId !== card.id && (
                 <div className="history-card-overlay">
-                  {item.isCompleted ? (
-                    <button
-                      className="history-card-action history-card-action-download"
-                      onClick={() => handleDownload(item)}
-                    >
-                      Download Timelapse
-                    </button>
-                  ) : (
-                    <button
-                      className="history-card-action history-card-action-resume"
-                      onClick={() => onResume(item.totalMinutes)}
-                    >
-                      Resume Session
-                    </button>
-                  )}
+                  <button
+                    className="history-card-action history-card-action-download"
+                    onClick={() => handleDownload(card)}
+                  >
+                    Download Timelapse
+                  </button>
                 </div>
               )}
             </div>
 
             {/* ── メタ情報 ── */}
             <div className="history-card-meta">
-              <div className="history-card-date">{item.date}</div>
+              <div className="history-card-date">{formatDate(card.createdAt)}</div>
               <div className="history-card-info">
                 <span className="history-card-stage">
-                  Stage {item.stage} · {formatDuration(item.sessionMinutes)}
+                  {MODE_LABEL[card.mode]} · Stage {card.stage} · {formatDuration(card.durationMinutes)}
                 </span>
-                <span className={`history-card-status ${item.isCompleted ? 'history-status-complete' : 'history-status-active'}`}>
-                  {item.isCompleted ? 'Done' : 'Active'}
+                <span className={`history-card-status ${card.isCompleted ? 'history-status-complete' : 'history-status-active'}`}>
+                  {card.isCompleted ? 'Done' : 'Active'}
                 </span>
               </div>
             </div>

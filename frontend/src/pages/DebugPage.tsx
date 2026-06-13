@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react';
 import { useTimer } from '../hooks/useTimer';
-import { getCurrentStage, STAGE_THRESHOLDS, MAX_STAGE } from '../utils/stageCalculator';
+import { getStageByFree, MAX_STAGE, FREE_STAGE_INTERVAL_MIN } from '../utils/stageCalculator';
 import { WorldPlayer } from '../components/World/WorldPlayer';
 import { generateTimelapse, downloadBlob } from '../utils/timelapse';
 
@@ -12,7 +12,7 @@ function formatMinutes(minutes: number): string {
 
 export function DebugPage() {
   const { isRunning, elapsedSeconds, totalMinutes, start, pause, reset, debugSetMinutes } = useTimer();
-  const stage = getCurrentStage(totalMinutes);
+  const stage = getStageByFree(totalMinutes);
   const inputRef = useRef<HTMLInputElement>(null);
   const [genProgress, setGenProgress] = useState<number | null>(null);
 
@@ -154,26 +154,29 @@ export function DebugPage() {
             )}
           </div>
 
-          {/* Stage jump */}
+          {/* Stage jump（free モード基準：1時間ごと） */}
           <div>
             <p className="text-white/30 text-xs mb-2 uppercase tracking-widest">Jump to Stage</p>
             <div className="flex flex-col gap-1">
-              {STAGE_THRESHOLDS.map((t) => (
-                <button
-                  key={t.stage}
-                  onClick={() => debugSetMinutes(t.minutes)}
-                  className="flex items-center justify-between px-3 py-2 rounded-lg text-xs transition-all"
-                  style={{
-                    background: stage === t.stage ? 'rgba(255,60,60,0.2)' : 'rgba(255,255,255,0.05)',
-                    border: stage === t.stage ? '1px solid rgba(255,60,60,0.5)' : '1px solid transparent',
-                  }}
-                >
-                  <span className="text-white/70">Stage {t.stage}</span>
-                  <span className="text-white/30 font-mono">
-                    {t.minutes === 0 ? '0h' : formatMinutes(t.minutes)}
-                  </span>
-                </button>
-              ))}
+              {Array.from({ length: MAX_STAGE }, (_, i) => i + 1).map((s) => {
+                const minutes = (s - 1) * FREE_STAGE_INTERVAL_MIN;
+                return (
+                  <button
+                    key={s}
+                    onClick={() => debugSetMinutes(minutes)}
+                    className="flex items-center justify-between px-3 py-2 rounded-lg text-xs transition-all"
+                    style={{
+                      background: stage === s ? 'rgba(255,60,60,0.2)' : 'rgba(255,255,255,0.05)',
+                      border: stage === s ? '1px solid rgba(255,60,60,0.5)' : '1px solid transparent',
+                    }}
+                  >
+                    <span className="text-white/70">Stage {s}</span>
+                    <span className="text-white/30 font-mono">
+                      {minutes === 0 ? '0h' : formatMinutes(minutes)}
+                    </span>
+                  </button>
+                );
+              })}
             </div>
           </div>
 

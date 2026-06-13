@@ -1,13 +1,17 @@
 import { useState, useEffect, useRef } from 'react';
 import { timelapseApi } from '../../api/client';
 import { generateTimelapse, downloadBlob } from '../../utils/timelapse';
+import { saveTimelapse } from '../../utils/timelapseStore';
+import type { GrowthMode } from '../../utils/stageCalculator';
 
 type Phase = 'confirm' | 'generating' | 'done';
 
 interface Props {
+  mode: GrowthMode;
   currentStage: number;
   totalMinutes: number;
   sessionSeconds: number;
+  isCompleted: boolean;
   sessionId: string;
   frameCount: number;
   /** IndexedDBからローカルフレームを取得する関数 */
@@ -18,7 +22,7 @@ interface Props {
 }
 
 export function EndSessionModal({
-  currentStage, totalMinutes, sessionSeconds,
+  mode, currentStage, totalMinutes, sessionSeconds, isCompleted,
   sessionId, frameCount, getLocalFrames, accessToken,
   onClose, onConfirm,
 }: Props) {
@@ -31,6 +35,24 @@ export function EndSessionModal({
 
   // サーバー生成の場合はURLをそのまま使う
   const isServerGeneration = !!accessToken && frameCount > 0;
+
+  // 生成した動画をローカル履歴(IndexedDB)に保存
+  async function persistToHistory(videoBlob: Blob | null) {
+    if (!videoBlob) return;
+    try {
+      await saveTimelapse({
+        id: sessionId || `tl_${Date.now()}`,
+        createdAt: Date.now(),
+        mode,
+        stage: currentStage,
+        durationMinutes: Math.round(sessionSeconds / 60),
+        isCompleted,
+        blob: videoBlob,
+      });
+    } catch (e) {
+      console.error('Failed to save timelapse to history', e);
+    }
+  }
 
   useEffect(() => {
     return () => { if (videoUrl && blob) URL.revokeObjectURL(videoUrl); };
@@ -55,6 +77,13 @@ export function EndSessionModal({
         setProgress(100);
         setVideoUrl(downloadUrl);
         setBlob(null); // presigned URLなのでBlob不要
+        // ローカル履歴にも保存（取得できなければスキップ）
+        try {
+          const resp = await fetch(downloadUrl);
+          if (resp.ok) await persistToHistory(await resp.blob());
+        } catch (e) {
+          console.error('Failed to fetch generated video for history', e);
+        }
       } else {
         // ─── ブラウザ側生成（ローカルキャプチャフレーム → なければ動画フォールバック） ───
         const localFrames = await getLocalFrames();
@@ -68,6 +97,7 @@ export function EndSessionModal({
         const url = URL.createObjectURL(result);
         setBlob(result);
         setVideoUrl(url);
+        await persistToHistory(result);
       }
 
       setPhase('done');

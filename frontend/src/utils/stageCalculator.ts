@@ -30,6 +30,80 @@ export function getVideoConfig(stage: number): VideoConfig {
   return { loopSrc: `${base}/stage_${pad}.mp4` };
 }
 
+// ── 成長モード ───────────────────────────────────────
+export type GrowthMode = 'time' | 'task' | 'free';
+
+export interface TaskItem {
+  id: string;
+  label: string;
+  done: boolean;
+}
+
+export interface GrowthConfig {
+  mode: GrowthMode;
+  /** time モード：目標時間（分）。100%到達で完成 */
+  targetMinutes: number;
+  /** task モード：達成で stage が進むタスク */
+  tasks: TaskItem[];
+}
+
+/** free モードの成長間隔（分）。1時間ごとに1段階成長し、4時間で完成 */
+export const FREE_STAGE_INTERVAL_MIN = 60;
+
+function clampStage(stage: number): number {
+  return Math.min(MAX_STAGE, Math.max(1, stage));
+}
+
+/** time モード：目標 T を 0, T/4, T/2, 3T/4, T で区切る（T到達で stage5 完成） */
+export function getStageByTime(elapsedMinutes: number, targetMinutes: number): number {
+  if (targetMinutes <= 0) return 1;
+  const seg = targetMinutes / (MAX_STAGE - 1);
+  return clampStage(1 + Math.floor(elapsedMinutes / seg));
+}
+
+/** task モード：完了割合を5段階に比例配分（全完了で stage5 完成） */
+export function getStageByTasks(doneCount: number, totalCount: number): number {
+  if (totalCount <= 0) return 1;
+  return clampStage(1 + Math.round((doneCount / totalCount) * (MAX_STAGE - 1)));
+}
+
+/** free モード：1時間ごとに1段階（4時間で完成） */
+export function getStageByFree(elapsedMinutes: number): number {
+  return clampStage(1 + Math.floor(elapsedMinutes / FREE_STAGE_INTERVAL_MIN));
+}
+
+/** モードに応じて現在の stage を算出 */
+export function getStage(config: GrowthConfig, elapsedMinutes: number): number {
+  switch (config.mode) {
+    case 'task': {
+      const done = config.tasks.filter((t) => t.done).length;
+      return getStageByTasks(done, config.tasks.length);
+    }
+    case 'time':
+      return getStageByTime(elapsedMinutes, config.targetMinutes);
+    case 'free':
+    default:
+      return getStageByFree(elapsedMinutes);
+  }
+}
+
+/** モードに応じた完成までの全体進捗（0〜1） */
+export function getOverallProgress(config: GrowthConfig, elapsedMinutes: number): number {
+  switch (config.mode) {
+    case 'task': {
+      if (config.tasks.length === 0) return 0;
+      const done = config.tasks.filter((t) => t.done).length;
+      return Math.min(1, done / config.tasks.length);
+    }
+    case 'time':
+      if (config.targetMinutes <= 0) return 0;
+      return Math.min(1, elapsedMinutes / config.targetMinutes);
+    case 'free':
+    default:
+      return Math.min(1, elapsedMinutes / (FREE_STAGE_INTERVAL_MIN * (MAX_STAGE - 1)));
+  }
+}
+
 export function getNextStageMinutes(currentStage: number): number | null {
   const next = STAGE_THRESHOLDS.find((t) => t.stage === currentStage + 1);
   return next?.minutes ?? null;
