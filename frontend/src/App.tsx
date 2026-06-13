@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { Home as HomeIcon, History } from 'lucide-react';
 import { MainPage } from './pages/MainPage';
 import { HistoryPage, type HistoryItem } from './pages/HistoryPage';
+import { DebugPage } from './pages/DebugPage';
 import { AuthModal } from './components/Auth/AuthModal';
 import { useAuth } from './context/AuthContext';
 import { sessionsApi } from './api/client';
@@ -76,6 +77,12 @@ export default function App() {
   useEffect(() => {
     fetchHistory();
   }, [fetchHistory]);
+
+  // 開発用デバッグ画面：URLが /debug または末尾 #debug のとき表示
+  // (通常UIには露出しないので一般ユーザーには見えない)
+  if (window.location.pathname === '/debug' || window.location.hash === '#debug') {
+    return <DebugPage />;
+  }
 
   function handleResume(totalMinutes: number) {
     setResumeMinutes(totalMinutes);

@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react';
 import { useTimer } from '../hooks/useTimer';
-import { getCurrentStage, STAGE_THRESHOLDS } from '../utils/stageCalculator';
+import { getCurrentStage, STAGE_THRESHOLDS, MAX_STAGE } from '../utils/stageCalculator';
 import { WorldPlayer } from '../components/World/WorldPlayer';
 import { generateTimelapse, downloadBlob } from '../utils/timelapse';
 
@@ -65,7 +65,7 @@ export function DebugPage() {
           <div className="rounded-xl p-3 text-xs font-mono" style={{ background: 'rgba(255,255,255,0.05)' }}>
             <p className="text-white/40 mb-1">Current state</p>
             <p className="text-white">
-              Stage <span className="text-red-400 font-bold">{stage}</span> / 9
+              Stage <span className="text-red-400 font-bold">{stage}</span> / {MAX_STAGE}
             </p>
             <p className="text-white">{totalMinutes.toFixed(1)} min total</p>
             <p className="text-white">
