@@ -30,7 +30,7 @@ function StageThumbnail({ stage }: { stage: number }) {
     video.muted = true;
     video.playsInline = true;
     video.crossOrigin = 'anonymous';
-    video.src = `/assets/worlds/prague/stage_0${stage}.mp4`;
+    video.src = `/assets/worlds/town/stage_0${stage}.mp4`;
 
     video.addEventListener('loadedmetadata', () => {
       video.currentTime = Math.min(1.0, video.duration * 0.3);

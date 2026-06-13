@@ -1,5 +1,5 @@
 import type { ActivityType } from '../../hooks/useTimer';
-import { getCurrentStage, getProgressToNextStage, STAGE_THRESHOLDS } from '../../utils/stageCalculator';
+import { getCurrentStage, getProgressToNextStage, STAGE_THRESHOLDS, MAX_STAGE } from '../../utils/stageCalculator';
 
 interface Props {
   isRunning: boolean;
@@ -57,7 +57,7 @@ const goldButtonStyle: React.CSSProperties = {
 export function TimerPanel({ isRunning, elapsedSeconds, totalMinutes, onStart, onPause, onReset }: Props) {
   const stage = getCurrentStage(totalMinutes);
   const progress = getProgressToNextStage(totalMinutes);
-  const isCompleted = stage >= 9;
+  const isCompleted = stage >= MAX_STAGE;
   const nextThreshold = STAGE_THRESHOLDS.find((t) => t.stage === stage + 1);
 
   return (

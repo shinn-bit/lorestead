@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom';
 import { useTimer } from '../hooks/useTimer';
 import { useVisibility } from '../hooks/useVisibility';
 import { useAuth } from '../context/AuthContext';
-import { getCurrentStage } from '../utils/stageCalculator';
+import { getCurrentStage, MAX_STAGE } from '../utils/stageCalculator';
 import { WorldPlayer } from '../components/World/WorldPlayer';
 import type { WorldPlayerHandle } from '../components/World/WorldPlayer';
 import type { HistoryItem } from './HistoryPage';
@@ -38,9 +38,6 @@ const WORLD_PHASES = [
   { hours: 16 },
   { hours: 20 },
 ];
-
-const ACTIVE_PRESETS = [25, 45, 60, 90];
-const REST_PRESETS   = [5, 10, 15];
 
 interface Props {
   resumeMinutes: number | null;
@@ -109,26 +106,6 @@ export function MainPage({ resumeMinutes, onResumeHandled, onAddHistory }: Props
   const phaseProgress = currentPhase === nextPhase ? 100 :
     (((totalAccumulatedTime / 3600) - currentPhase.hours) / (nextPhase.hours - currentPhase.hours)) * 100;
 
-  // Pomodoro
-  const [sessionType,     setSessionType]     = useState<'ACTIVE' | 'REST'>('ACTIVE');
-  const [sessionTimeLeft, setSessionTimeLeft] = useState(25 * 60);
-  const [isSessionActive, setIsSessionActive] = useState(false);
-
-  const resetSessionTimer = (minutes: number) => {
-    setIsSessionActive(false);
-    setSessionTimeLeft(minutes * 60);
-  };
-
-  useEffect(() => {
-    let interval: ReturnType<typeof setInterval> | null = null;
-    if (isSessionActive && sessionTimeLeft > 0) {
-      interval = setInterval(() => setSessionTimeLeft(t => t - 1), 1000);
-    } else if (sessionTimeLeft === 0) {
-      setIsSessionActive(false);
-    }
-    return () => { if (interval) clearInterval(interval); };
-  }, [isSessionActive, sessionTimeLeft]);
-
   const prevRunning = useRef(false);
   useEffect(() => {
     if (prevRunning.current && !isRunning && elapsedSeconds > 0) {
@@ -159,7 +136,7 @@ export function MainPage({ resumeMinutes, onResumeHandled, onAddHistory }: Props
         totalMinutes,
         sessionMinutes: Math.round(elapsedSeconds / 60),
         stage,
-        isCompleted: stage === 9,
+        isCompleted: stage === MAX_STAGE,
       });
     }
     resetAll();
@@ -335,57 +312,6 @@ export function MainPage({ resumeMinutes, onResumeHandled, onAddHistory }: Props
           </div>
         )}
       </div>
-
-      {/* ══════════════════════════════════
-          右上：ポモドーロパネル (ピュアCSS管理)
-      ══════════════════════════════════ */}
-      <div className="pomodoro-panel-custom">
-
-        {/* ACTIVE / REST トグル */}
-        <div className="pomodoro-toggle-wrapper">
-          <button
-            onClick={() => { setSessionType('ACTIVE'); resetSessionTimer(25); }}
-            className={sessionType === 'ACTIVE' ? 'pomodoro-btn-active' : 'pomodoro-btn-inactive'}
-          >
-            ACTIVE
-          </button>
-          <button
-            onClick={() => { setSessionType('REST'); resetSessionTimer(5); }}
-            className={sessionType === 'REST' ? 'pomodoro-btn-active' : 'pomodoro-btn-inactive'}
-          >
-            REST
-          </button>
-        </div>
-
-        {/* セッションタイマー */}
-        <div className="pomodoro-time-display">
-          {formatTime(sessionTimeLeft)}
-        </div>
-
-        {/* START / PAUSE */}
-        <button
-          onClick={() => setIsSessionActive(a => !a)}
-          className="pomodoro-start-btn"
-        >
-          {isSessionActive ? 'PAUSE' : 'START'}
-        </button>
-
-        {/* プリセット */}
-        {!isSessionActive && (
-          <div className="pomodoro-presets-wrapper">
-            {(sessionType === 'ACTIVE' ? ACTIVE_PRESETS : REST_PRESETS).map(mins => (
-              <button
-                key={mins}
-                onClick={() => resetSessionTimer(mins)}
-                className="pomodoro-preset-btn"
-              >
-                {mins}
-              </button>
-            ))}
-          </div>
-        )}
-      </div>
-
 
       {/* サインイン / サインアウト */}
       <div className="absolute bottom-8 right-10 z-10">

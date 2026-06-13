@@ -5,14 +5,10 @@ export interface StageThreshold {
 
 export const STAGE_THRESHOLDS: StageThreshold[] = [
   { stage: 1, minutes: 0 },
-  { stage: 2, minutes: 120 },
-  { stage: 3, minutes: 240 },
-  { stage: 4, minutes: 360 },
-  { stage: 5, minutes: 540 },
-  { stage: 6, minutes: 720 },
-  { stage: 7, minutes: 900 },
-  { stage: 8, minutes: 1080 },
-  { stage: 9, minutes: 1200 },
+  { stage: 2, minutes: 300 },
+  { stage: 3, minutes: 600 },
+  { stage: 4, minutes: 900 },
+  { stage: 5, minutes: 1200 },
 ];
 
 export function getCurrentStage(totalMinutes: number): number {
@@ -20,21 +16,16 @@ export function getCurrentStage(totalMinutes: number): number {
   return stage?.stage ?? 1;
 }
 
+export const MAX_STAGE = 5;
+
 export interface VideoConfig {
-  /** ループ再生する動画（stage 9 以外） */
+  /** ループ再生する動画 */
   loopSrc?: string;
-  /** 静止画（stage 9） */
-  imageSrc?: string;
 }
 
 export function getVideoConfig(stage: number): VideoConfig {
-  const base = '/assets/worlds/prague';
-  if (stage === 9) {
-    return { imageSrc: `${base}/stage_09.png` };
-  }
-  if (stage === 1) {
-    return { loopSrc: `${base}/stage_01_loop.mp4` };
-  }
+  if (stage < 1 || stage > MAX_STAGE) return {};
+  const base = '/assets/worlds/town';
   const pad = String(stage).padStart(2, '0');
   return { loopSrc: `${base}/stage_${pad}.mp4` };
 }
