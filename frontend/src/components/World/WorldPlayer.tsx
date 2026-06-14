@@ -154,12 +154,6 @@ export const WorldPlayer = forwardRef<WorldPlayerHandle, Props>(function WorldPl
       />
       {/* 先読み専用 (非表示) */}
       <video ref={preloadRef} muted playsInline preload="auto" className="hidden" />
-
-      {!isActive && (
-        <div className="absolute inset-0 flex items-center justify-center" style={{ zIndex: 30 }}>
-          <p className="text-white/30 text-xs tracking-[0.25em] uppercase font-light">Paused</p>
-        </div>
-      )}
     </div>
   );
 });

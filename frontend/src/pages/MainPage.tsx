@@ -3,6 +3,8 @@ import { createPortal } from 'react-dom';
 import { useTimer } from '../hooks/useTimer';
 import { useVisibility } from '../hooks/useVisibility';
 import { useGrowthConfig } from '../hooks/useGrowthConfig';
+import { useI18n } from '../i18n/I18nContext';
+import { LangToggle } from '../components/LangToggle';
 import { getStage, getOverallProgress, MAX_STAGE } from '../utils/stageCalculator';
 import { WorldPlayer } from '../components/World/WorldPlayer';
 import type { WorldPlayerHandle } from '../components/World/WorldPlayer';
@@ -13,7 +15,7 @@ import { useFrameCapture } from '../hooks/useFrameCapture';
 import { useScreenCapture } from '../hooks/useScreenCapture';
 import { usePictureInPicture } from '../hooks/usePictureInPicture';
 import { ScreenCapturePrompt } from '../components/ScreenCapture/ScreenCapturePrompt';
-import { Button } from '../App';
+import type { View } from '../App';
 
 function formatTime(seconds: number, showHours = false): string {
   const s = Math.floor(seconds);
@@ -26,10 +28,22 @@ function formatTime(seconds: number, showHours = false): string {
   return `${m.toString().padStart(2, '0')}:${sec.toString().padStart(2, '0')}`;
 }
 
-export function MainPage() {
+const HomeIcon = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" /><polyline points="9 22 9 12 15 12 15 22" /></svg>
+);
+const ScrollIcon = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 3v5h5" /><path d="M3.05 13A9 9 0 1 0 6 5.3L3 8" /><polyline points="12 7 12 12 15 15" /></svg>
+);
+
+interface Props {
+  onNavigate: (view: View) => void;
+}
+
+export function MainPage({ onNavigate }: Props) {
   const { isRunning, elapsedSeconds, totalMinutes, start, pause, reset, resetAll } = useTimer();
   const { isActive } = useVisibility();
   const { config, setTimeMode, setTaskMode, setFreeMode, toggleTask, clearConfig } = useGrowthConfig();
+  const { t } = useI18n();
 
   const [showEndSession, setShowEndSession]         = useState(false);
   const [showRestartConfirm, setShowRestartConfirm] = useState(false);
@@ -38,10 +52,8 @@ export function MainPage() {
   const screenPromptShownRef                        = useRef(false);
   const { pipWindow, isSupported: isPipSupported, open: openPip, close: closePip, isOpen: isPipOpen } = usePictureInPicture(280, 210);
 
-  // PiP表示中は他のタブで作業しながらでもアクティブ扱いにする
   const effectiveIsActive = isPipOpen || isActive;
 
-  // 現在の stage（config 未設定時は 1）
   const stage                = config ? getStage(config, totalMinutes) : 1;
   const totalAccumulatedTime = Math.floor(totalMinutes * 60);
 
@@ -55,7 +67,6 @@ export function MainPage() {
 
   const screenCapture = useScreenCapture({ sessionId: getSessionId(), isRunning });
 
-  // 初回START時にスクリーンキャプチャのプロンプトを表示
   useEffect(() => {
     if (isRunning && !screenPromptShownRef.current && !screenCapture.isCapturing) {
       screenPromptShownRef.current = true;
@@ -70,6 +81,7 @@ export function MainPage() {
         onStartTime={(targetMinutes) => { reset(); setTimeMode(targetMinutes); }}
         onStartTasks={(labels) => { reset(); setTaskMode(labels); }}
         onStartFree={() => { reset(); setFreeMode(); }}
+        onNavigate={onNavigate}
       />
     );
   }
@@ -77,7 +89,6 @@ export function MainPage() {
   const overallProgress = getOverallProgress(config, totalMinutes) * 100;
   const isTaskMode = config.mode === 'task';
 
-  // タイムラプス生成用：スクリーンフレーム優先、なければワールドフレーム
   async function getFramesForTimelapse(): Promise<Blob[]> {
     const screen = await screenCapture.getFrames();
     if (screen.length > 0) return screen;
@@ -89,13 +100,12 @@ export function MainPage() {
     if (isMini)    { setIsMini(false); return; }
     if (isPipSupported) {
       const ok = await openPip();
-      if (!ok) setIsMini(true); // fallback: in-page mini
+      if (!ok) setIsMini(true);
     } else {
       setIsMini(true);
     }
   }
 
-  // Restart：すべて初期化して Setup 画面に戻す
   function handleRestart() {
     resetAll();
     resetFrames();
@@ -105,7 +115,6 @@ export function MainPage() {
     clearConfig();
   }
 
-  // ミニモード中はMiniPlayerだけ表示
   if (isMini) {
     return (
       <MiniPlayer
@@ -119,126 +128,86 @@ export function MainPage() {
     );
   }
 
-  return (
-    <div className="absolute inset-0">
+  const worldInactive = !isRunning;
 
-      {/* ── 背景動画：全画面 ── */}
-      <div className="absolute inset-0 z-0">
+  return (
+    <div className={`scr-world ${worldInactive ? 'inactive' : ''}`}>
+
+      {/* ── World video ── */}
+      <div className="absolute inset-0" style={{ zIndex: 0 }}>
         <WorldPlayer ref={worldRef} stage={stage} isActive={effectiveIsActive && isRunning} />
       </div>
+      <div className="world-glow" />
+      <div className="world-scrim" />
+      <div className="world-base" />
+      {worldInactive && <div className="paused-label">{t('paused')}</div>}
 
-      {/* ══════════════════════════════════
-          左上：フェーズ情報 + プログレスバー + 累積タイマー
-      ══════════════════════════════════ */}
-      <div className="absolute top-24 left-10 z-10 flex flex-col gap-4 w-72">
-        <div className="flex justify-between text-sm tracking-widest font-semibold text-[#f5e6d3]/90 uppercase">
-          <span style={{ fontFamily: "'Cinzel', serif" }}>MEDIEVAL TOWN</span>
-          <span className="text-[#d4af37]" style={{ fontFamily: "'Cinzel', serif" }}>PHASE {stage} / {MAX_STAGE}</span>
+      {/* ── Title ── */}
+      <div className="title"><h1>LORESTEAD</h1></div>
+
+      {/* ── Top-right: language + nav ── */}
+      <div className="topright">
+        <LangToggle />
+        <nav className="nav">
+          <button className="active"><HomeIcon /> HOME</button>
+          <button onClick={() => onNavigate('history')}><ScrollIcon /> HISTORY</button>
+        </nav>
+      </div>
+
+      {/* ── Left info ── */}
+      <div className="info">
+        <div className="info-head">
+          <span>{t('medieval_town')}</span>
+          <span className="phase">{t('phase_label')} {stage} / {MAX_STAGE}</span>
         </div>
-
-        <div className="h-3 w-full bg-[#2a2d33] flex items-center p-0.5">
-          <div
-            className="h-full bg-[#f5e6d3] transition-all duration-1000"
-            style={{ width: `${overallProgress}%` }}
-          />
-        </div>
-
-        <div
-          className="text-6xl font-light tracking-wider text-[#f5e6d3] flex items-end gap-4"
-          style={{ textShadow: '0 4px 20px rgba(0,0,0,0.8)', fontFamily: "'Cinzel', serif" }}
-        >
-          {formatTime(totalAccumulatedTime, true)}
-        </div>
-
-        {/* Sub Screen ボタン */}
+        <div className="progress"><div className="progress-fill" style={{ width: `${overallProgress}%` }} /></div>
+        <div className="accum">{formatTime(totalAccumulatedTime, true)}</div>
         <button
+          className={`subscreen-btn ${isPipOpen ? 'on' : ''}`}
           onClick={handleSubScreen}
           title={isPipOpen ? 'Close sub screen' : 'Open as floating sub screen'}
-          style={{
-            marginTop: 4,
-            alignSelf: 'flex-start',
-            display: 'flex',
-            alignItems: 'center',
-            gap: 8,
-            background: isPipOpen ? 'rgba(212,175,55,0.15)' : 'rgba(0,0,0,0.35)',
-            border: isPipOpen
-              ? '1px solid rgba(212,175,55,0.5)'
-              : '1px solid rgba(255,255,255,0.12)',
-            color: isPipOpen ? '#d4af37' : 'rgba(245,230,211,0.5)',
-            fontFamily: "'Cinzel', serif",
-            fontSize: 11,
-            letterSpacing: '0.2em',
-            textTransform: 'uppercase',
-            padding: '7px 16px',
-            borderRadius: 9999,
-            cursor: 'pointer',
-            backdropFilter: 'blur(4px)',
-            transition: 'all 0.2s',
-          }}
         >
           <span style={{ fontSize: 14, lineHeight: 1 }}>⊡</span>
-          {isPipOpen ? 'Close Sub Screen' : (isMini ? 'Restore' : 'Sub Screen')}
+          <span style={{ whiteSpace: 'nowrap' }}>{isPipOpen ? 'Close Sub Screen' : t('sub_screen')}</span>
         </button>
       </div>
 
-      {/* ══════════════════════════════════
-          右上：タスクモードのチェックリスト
-      ══════════════════════════════════ */}
+      {/* ── Task checklist (task mode) ── */}
       {isTaskMode && (
         <div
-          className="absolute z-10 flex flex-col gap-2"
-          style={{ top: 96, right: 40, width: 260, maxHeight: 'calc(100dvh - 220px)' }}
+          style={{
+            position: 'absolute', top: 100, right: 40, zIndex: 10, width: 270,
+            maxHeight: 'calc(100dvh - 220px)', display: 'flex', flexDirection: 'column', gap: 8,
+          }}
         >
-          <div
-            className="flex items-center justify-between"
-            style={{ fontFamily: "'Cinzel', serif", fontSize: 12, letterSpacing: '0.15em', color: 'rgba(245,230,211,0.7)', textTransform: 'uppercase' }}
-          >
-            <span>Tasks</span>
-            <span style={{ color: '#d4af37' }}>
-              {config.tasks.filter((t) => t.done).length} / {config.tasks.length}
-            </span>
+          <div style={{ display: 'flex', justifyContent: 'space-between', fontFamily: "'Cinzel', serif", fontSize: 12, letterSpacing: '0.15em', color: 'rgba(247,236,216,0.75)', textTransform: 'uppercase' }}>
+            <span>{t('tasks_word')}</span>
+            <span style={{ color: 'var(--h-ember)' }}>{config.tasks.filter((x) => x.done).length} / {config.tasks.length}</span>
           </div>
-          <div className="flex flex-col gap-2 overflow-y-auto custom-scrollbar" style={{ paddingRight: 2 }}>
+          <div className="custom-scrollbar" style={{ display: 'flex', flexDirection: 'column', gap: 8, overflowY: 'auto', paddingRight: 2 }}>
             {config.tasks.map((task) => (
               <button
                 key={task.id}
                 onClick={() => toggleTask(task.id)}
-                className="flex items-center gap-3 text-left transition-all"
                 style={{
-                  background: task.done ? 'rgba(212,175,55,0.12)' : 'rgba(0,0,0,0.4)',
-                  border: task.done ? '1px solid rgba(212,175,55,0.45)' : '1px solid rgba(255,255,255,0.1)',
-                  borderRadius: 12,
-                  padding: '10px 14px',
-                  cursor: 'pointer',
-                  backdropFilter: 'blur(6px)',
+                  display: 'flex', alignItems: 'center', gap: 12, textAlign: 'left', cursor: 'pointer',
+                  background: task.done ? 'rgba(240,164,74,0.14)' : 'rgba(30,19,11,0.6)',
+                  border: task.done ? '1px solid rgba(240,164,74,0.5)' : '1px solid rgba(240,164,74,0.16)',
+                  borderRadius: 12, padding: '10px 14px', backdropFilter: 'blur(6px)',
                 }}
               >
-                <span
-                  style={{
-                    width: 18,
-                    height: 18,
-                    borderRadius: 6,
-                    flexShrink: 0,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    fontSize: 12,
-                    background: task.done ? '#d4af37' : 'transparent',
-                    border: task.done ? 'none' : '1px solid rgba(245,230,211,0.4)',
-                    color: '#1a1c20',
-                  }}
-                >
+                <span style={{
+                  width: 18, height: 18, borderRadius: 6, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  fontSize: 12, background: task.done ? 'var(--h-ember)' : 'transparent',
+                  border: task.done ? 'none' : '1px solid rgba(247,236,216,0.4)', color: '#241307',
+                }}>
                   {task.done ? '✓' : ''}
                 </span>
-                <span
-                  style={{
-                    fontFamily: 'sans-serif',
-                    fontSize: 13,
-                    color: task.done ? 'rgba(245,230,211,0.5)' : '#f5e6d3',
-                    textDecoration: task.done ? 'line-through' : 'none',
-                    lineHeight: 1.3,
-                  }}
-                >
+                <span style={{
+                  fontFamily: 'system-ui, sans-serif', fontSize: 13, lineHeight: 1.3,
+                  color: task.done ? 'rgba(247,236,216,0.5)' : 'var(--h-ink)',
+                  textDecoration: task.done ? 'line-through' : 'none',
+                }}>
                   {task.label}
                 </span>
               </button>
@@ -247,91 +216,21 @@ export function MainPage() {
         </div>
       )}
 
-      {/* ══════════════════════════════════
-          左下：START / END SESSION ボタン
-      ══════════════════════════════════ */}
-      <div className="absolute bottom-12 left-10 z-10 flex flex-col gap-4 w-72">
-        <Button
-          onClick={isRunning ? pause : start}
-          className={`!py-4 text-xl tracking-[0.3em] ${isRunning ? 'border-red-500/50 text-red-200 hover:bg-red-500/10' : ''}`}
-        >
-          {isRunning ? 'PAUSE' : 'START'}
-        </Button>
-        <Button
-          onClick={() => setShowEndSession(true)}
-          className="!py-3 text-sm tracking-widest text-[#f5e6d3]/70 border-[#f5e6d3]/20"
-        >
-          END SESSION
-        </Button>
+      {/* ── Bottom controls ── */}
+      <div className="controls">
+        <button className={`btn-start ${isRunning ? 'running' : ''}`} onClick={isRunning ? pause : start}>
+          {isRunning ? t('pause') : t('start')}
+        </button>
+        <button className="btn-end" onClick={() => setShowEndSession(true)}>{t('end_session')}</button>
 
-        {/* Restart: 確認前 */}
-        {!showRestartConfirm && (
-          <button
-            onClick={() => setShowRestartConfirm(true)}
-            style={{
-              background: 'transparent',
-              border: 'none',
-              color: 'rgba(245,230,211,0.25)',
-              fontFamily: "'Cinzel', serif",
-              fontSize: '11px',
-              letterSpacing: '0.2em',
-              textTransform: 'uppercase',
-              cursor: 'pointer',
-              padding: '4px 0',
-              textAlign: 'left',
-            }}
-          >
-            Restart World
-          </button>
-        )}
-
-        {/* Restart: 確認中 */}
-        {showRestartConfirm && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-            <p style={{
-              fontFamily: "'Cinzel', serif",
-              fontSize: '11px',
-              color: 'rgba(245,230,211,0.5)',
-              letterSpacing: '0.1em',
-              textAlign: 'center',
-            }}>
-              Reset and choose a new goal?
-            </p>
-            <div style={{ display: 'flex', gap: '8px' }}>
-              <button
-                onClick={() => setShowRestartConfirm(false)}
-                style={{
-                  flex: 1, padding: '8px',
-                  borderRadius: '9999px',
-                  background: 'transparent',
-                  border: '1px solid rgba(255,255,255,0.15)',
-                  color: 'rgba(245,230,211,0.5)',
-                  fontFamily: "'Cinzel', serif",
-                  fontSize: '10px',
-                  letterSpacing: '0.15em',
-                  textTransform: 'uppercase',
-                  cursor: 'pointer',
-                }}
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleRestart}
-                style={{
-                  flex: 1, padding: '8px',
-                  borderRadius: '9999px',
-                  background: 'rgba(200,50,50,0.25)',
-                  border: '1px solid rgba(200,50,50,0.5)',
-                  color: '#f5e6d3',
-                  fontFamily: "'Cinzel', serif",
-                  fontSize: '10px',
-                  letterSpacing: '0.15em',
-                  textTransform: 'uppercase',
-                  cursor: 'pointer',
-                }}
-              >
-                Restart
-              </button>
+        {!showRestartConfirm ? (
+          <button className="restart" onClick={() => setShowRestartConfirm(true)}>{t('restart_world')}</button>
+        ) : (
+          <div className="restart-confirm">
+            <p>Reset and choose a new goal?</p>
+            <div className="row">
+              <button className="cancel" onClick={() => setShowRestartConfirm(false)}>Cancel</button>
+              <button className="go" onClick={handleRestart}>Restart</button>
             </div>
           </div>
         )}
@@ -340,10 +239,7 @@ export function MainPage() {
       {/* スクリーンキャプチャ：プロンプト */}
       {showScreenPrompt && (
         <ScreenCapturePrompt
-          onEnable={async () => {
-            setShowScreenPrompt(false);
-            await screenCapture.start();
-          }}
+          onEnable={async () => { setShowScreenPrompt(false); await screenCapture.start(); }}
           onSkip={() => setShowScreenPrompt(false)}
         />
       )}
@@ -354,23 +250,11 @@ export function MainPage() {
           onClick={screenCapture.stop}
           title="Click to stop screen recording"
           style={{
-            position:      'absolute',
-            bottom:        180,
-            left:          40,
-            display:       'flex',
-            alignItems:    'center',
-            gap:           8,
-            padding:       '7px 14px',
-            borderRadius:  9999,
-            background:    'rgba(180,30,30,0.18)',
-            border:        '1px solid rgba(200,50,50,0.45)',
-            color:         'rgba(255,160,160,0.85)',
-            fontFamily:    "'Cinzel', serif",
-            fontSize:      10,
-            letterSpacing: '0.18em',
-            textTransform: 'uppercase',
-            cursor:        'pointer',
-            zIndex:        40,
+            position: 'absolute', bottom: 200, left: 40, display: 'flex', alignItems: 'center', gap: 8,
+            padding: '7px 14px', borderRadius: 9999, background: 'rgba(180,30,30,0.18)',
+            border: '1px solid rgba(200,50,50,0.45)', color: 'rgba(255,160,160,0.85)',
+            fontFamily: "'Cinzel', serif", fontSize: 10, letterSpacing: '0.18em', textTransform: 'uppercase',
+            cursor: 'pointer', zIndex: 40,
           }}
         >
           <span style={{ width: 7, height: 7, borderRadius: '50%', background: '#e05555', display: 'inline-block', animation: 'pulse 1.4s infinite' }} />
