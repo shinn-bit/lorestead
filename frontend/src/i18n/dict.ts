@@ -38,7 +38,25 @@ export const dict = {
   just_start:      { en: 'Just start →', ja: 'とりあえず始める →' },
   just_start_note: { en: 'No goal · grows every hour', ja: '目標なし · 1時間ごとに育つ' },
 
-  /* ── Setup · first-run explanation ── */
+  /* ── Setup · stepped wizard ── */
+  choose_sub:        { en: 'Choose how to begin — you can change it anytime.', ja: '進め方を選ぼう——あとからいつでも変えられます。' },
+  nav_back:          { en: 'Back', ja: '戻る' },
+  time_step_eyebrow: { en: 'Step 2 · By Time', ja: 'ステップ 2 · 時間で' },
+  time_step_h:       { en: 'Set your goal', ja: '目標を決める' },
+  task_step_eyebrow: { en: 'Step 2 · By Tasks', ja: 'ステップ 2 · タスクで' },
+  task_step_h:       { en: 'List your tasks', ja: 'タスクを書き出す' },
+
+  /* ── Setup · guided tour ── */
+  tour_skip:       { en: 'Skip', ja: 'スキップ' },
+  tour_back:       { en: 'Back', ja: '戻る' },
+  tour_next:       { en: 'Next', ja: '次へ' },
+  tour_done:       { en: 'Got it', ja: 'はじめる' },
+  tour_1:          { en: 'First, choose how your world will grow — <b>By Time</b> or <b>By Tasks</b>.', ja: 'まずは育て方を選びます——<b>時間で</b> か <b>タスクで</b>。' },
+  tour_2:          { en: 'Then set a goal: tap a 1–8h preset, or enter your own length.', ja: '次に目標を決めます。1〜8時間のプリセットを選ぶか、好きな長さを入力。' },
+  tour_3:          { en: 'Seal it and begin — the town rises as you stay focused.', ja: '封をして、はじめる——集中するほど街が育っていきます。' },
+  tour_4:          { en: '<b>Just start</b> is always here, on every screen, when you want to skip setup.', ja: '設定を飛ばしたいときは <b>とりあえず始める</b>。どの画面にもあります。' },
+
+  /* ── Setup · first-run explanation (legacy, unused) ── */
   explain_eyebrow: { en: 'Before you begin', ja: 'はじめる前に' },
   explain_h2:      { en: 'Three ways to grow your world', ja: '世界の育て方は3通り' },
   explain_lead:    { en: "Your focused time builds the town. Choose how you'd like to set it — you can change this anytime.", ja: '集中した時間が街を築きます。進め方を選んでください——あとからいつでも変えられます。' },
