@@ -21,6 +21,16 @@ export const dict = {
   start_over:      { en: 'Start Over', ja: '最初から' },
   paused:          { en: 'PAUSED', ja: '一時停止中' },
 
+  /* ── Home · Hide UI ── */
+  hide_ui:         { en: 'Hide UI', ja: '表示を隠す' },
+  hide_ui_hint:    { en: 'Click anywhere to bring the interface back', ja: '画面をクリックすると表示が戻ります' },
+
+  /* ── Home · guided tour ── */
+  how_to_use:      { en: 'How to use', ja: '使い方' },
+  home_tour_1:     { en: 'Tap <b>Sub Screen</b> to shrink the world down to a small floating window — perfect for keeping it visible while you work elsewhere.', ja: '<b>サブ画面</b>をタップすると、世界を小さなウィンドウとして表示できます。他の作業をしながらでも見ていられます。' },
+  home_tour_2:     { en: 'Tap <b>Hide UI</b> to clear away the title, timer and buttons, leaving just the looping world. Click anywhere on the screen to bring everything back.', ja: '<b>表示を隠す</b>をタップすると、タイトルやタイマーなどが消えて、ループ動画だけが表示されます。画面のどこかをクリックすると元の表示に戻ります。' },
+  home_tour_preview: { en: 'This is how the sub screen looks', ja: 'サブ画面のイメージはこちら' },
+
   /* ── Setup ── */
   how_it_works:    { en: 'How it works', ja: '使い方' },
   setup_eyebrow:   { en: 'A New Endeavour', ja: '新たな営み' },

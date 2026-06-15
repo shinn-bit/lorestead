@@ -16,6 +16,7 @@ import { useFrameCapture } from '../hooks/useFrameCapture';
 import { useScreenCapture } from '../hooks/useScreenCapture';
 import { usePictureInPicture } from '../hooks/usePictureInPicture';
 import { ScreenCapturePrompt } from '../components/ScreenCapture/ScreenCapturePrompt';
+import { HomeTour, loadHomeTourSeen } from '../components/HomeTour/HomeTour';
 import type { View } from '../App';
 
 function formatTime(seconds: number, showHours = false): string {
@@ -35,6 +36,9 @@ const HomeIcon = () => (
 const ScrollIcon = () => (
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 3v5h5" /><path d="M3.05 13A9 9 0 1 0 6 5.3L3 8" /><polyline points="12 7 12 12 15 15" /></svg>
 );
+const EyeOffIcon = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9.88 9.88a3 3 0 1 0 4.24 4.24" /><path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68" /><path d="M6.61 6.61A13.53 13.53 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61" /><line x1="2" y1="2" x2="22" y2="22" /></svg>
+);
 
 interface Props {
   onNavigate: (view: View) => void;
@@ -49,7 +53,11 @@ export function MainPage({ onNavigate }: Props) {
   const [showEndSession, setShowEndSession]         = useState(false);
   const [isMini, setIsMini]                         = useState(false);
   const [showScreenPrompt, setShowScreenPrompt]     = useState(false);
+  const [uiHidden, setUiHidden]                     = useState(false);
+  const [homeTourOpen, setHomeTourOpen]             = useState<boolean>(() => !loadHomeTourSeen());
   const screenPromptShownRef                        = useRef(false);
+  const subscreenBtnRef                             = useRef<HTMLButtonElement>(null);
+  const hideBtnRef                                  = useRef<HTMLButtonElement>(null);
   const { pipWindow, isSupported: isPipSupported, open: openPip, close: closePip, isOpen: isPipOpen } = usePictureInPicture(280, 210);
 
   const effectiveIsActive = isPipOpen || isActive;
@@ -141,6 +149,18 @@ export function MainPage({ onNavigate }: Props) {
     );
   }
 
+  // ── UIを隠す：ループ動画のみ表示。画面クリックで復帰 ──
+  if (uiHidden) {
+    return (
+      <div className="scr-world ui-hidden" onClick={() => setUiHidden(false)}>
+        <div className="absolute inset-0" style={{ zIndex: 0 }}>
+          <WorldPlayer ref={worldRef} stage={stage} isActive={effectiveIsActive && isRunning} />
+        </div>
+        <div className="hide-hint">{t('hide_ui_hint')}</div>
+      </div>
+    );
+  }
+
   const worldInactive = !isRunning;
 
   return (
@@ -158,9 +178,10 @@ export function MainPage({ onNavigate }: Props) {
       {/* ── Title ── */}
       <div className="title"><h1>LORESTEAD</h1></div>
 
-      {/* ── Top-right: language + nav ── */}
+      {/* ── Top-right: language + how-to-use + nav ── */}
       <div className="topright">
         <LangToggle />
+        <button className="howlink" onClick={() => setHomeTourOpen(true)}>{t('how_to_use')}</button>
         <nav className="nav">
           <button className="active"><HomeIcon /> HOME</button>
           <button onClick={() => onNavigate('history')}><ScrollIcon /> HISTORY</button>
@@ -175,14 +196,26 @@ export function MainPage({ onNavigate }: Props) {
         </div>
         <div className="progress"><div className="progress-fill" style={{ width: `${overallProgress}%` }} /></div>
         <div className="accum">{formatTime(totalAccumulatedTime, true)}</div>
-        <button
-          className={`subscreen-btn ${isPipOpen ? 'on' : ''}`}
-          onClick={handleSubScreen}
-          title={isPipOpen ? 'Close sub screen' : 'Open as floating sub screen'}
-        >
-          <span style={{ fontSize: 14, lineHeight: 1 }}>⊡</span>
-          <span style={{ whiteSpace: 'nowrap' }}>{isPipOpen ? t('close_sub_screen') : t('sub_screen')}</span>
-        </button>
+        <div className="view-controls">
+          <button
+            ref={subscreenBtnRef}
+            className={`view-btn ${isPipOpen ? 'on' : ''}`}
+            onClick={handleSubScreen}
+            title={isPipOpen ? 'Close sub screen' : 'Open as floating sub screen'}
+          >
+            <span style={{ fontSize: 14, lineHeight: 1 }}>⊡</span>
+            <span style={{ whiteSpace: 'nowrap' }}>{isPipOpen ? t('close_sub_screen') : t('sub_screen')}</span>
+          </button>
+          <button
+            ref={hideBtnRef}
+            className="view-btn"
+            onClick={() => setUiHidden(true)}
+            title={t('hide_ui')}
+          >
+            <EyeOffIcon />
+            <span style={{ whiteSpace: 'nowrap' }}>{t('hide_ui')}</span>
+          </button>
+        </div>
       </div>
 
       {/* ── Task checklist (task mode) ── */}
@@ -291,6 +324,14 @@ export function MainPage({ onNavigate }: Props) {
         />,
         pipWindow.document.body
       )}
+
+      {/* ホーム使い方ツアー：初回は自動表示、以後は「使い方」ボタンから */}
+      <HomeTour
+        open={homeTourOpen}
+        onClose={() => setHomeTourOpen(false)}
+        subscreenRef={subscreenBtnRef}
+        hideBtnRef={hideBtnRef}
+      />
     </div>
   );
 }

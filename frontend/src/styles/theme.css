@@ -317,9 +317,34 @@
 .scr-world .progress { height: 11px; width: 100%; background: rgba(74,46,26,0.7); display: flex; align-items: center; padding: 2px; border-radius: 2px; }
 .scr-world .progress-fill { height: 100%; background: linear-gradient(90deg, var(--h-ember-lo), var(--h-ember-hi)); transition: width 1s; border-radius: 1px; box-shadow: 0 0 10px rgba(240,140,55,0.5); }
 .scr-world .accum { font-size: 4rem; font-weight: 300; letter-spacing: 0.04em; color: var(--h-ink); text-shadow: 0 4px 22px rgba(0,0,0,0.7); line-height: 1; }
-.scr-world .subscreen-btn { margin-top: 2px; align-self: flex-start; display: flex; align-items: center; gap: 8px; background: var(--h-panel); border: 1px solid rgba(240,164,74,0.28); color: rgba(247,236,216,0.6); font-family: 'Cinzel', serif; font-size: 11px; letter-spacing: 0.2em; text-transform: uppercase; padding: 7px 16px; border-radius: 9999px; cursor: pointer; -webkit-backdrop-filter: blur(4px); backdrop-filter: blur(4px); transition: all 0.2s; }
-.scr-world .subscreen-btn:hover { color: var(--h-ink); border-color: rgba(240,164,74,0.5); }
-.scr-world .subscreen-btn.on { background: rgba(240,164,74,0.16); border-color: rgba(240,164,74,0.5); color: var(--h-ember); }
+.scr-world .view-controls { margin-top: 2px; align-self: flex-start; display: flex; flex-wrap: wrap; gap: 8px; }
+.scr-world .view-btn { display: flex; align-items: center; gap: 8px; background: var(--h-panel); border: 1px solid rgba(240,164,74,0.28); color: rgba(247,236,216,0.6); font-family: 'Cinzel', serif; font-size: 11px; letter-spacing: 0.2em; text-transform: uppercase; padding: 7px 16px; border-radius: 9999px; cursor: pointer; -webkit-backdrop-filter: blur(4px); backdrop-filter: blur(4px); transition: all 0.2s; }
+.scr-world .view-btn:hover { color: var(--h-ink); border-color: rgba(240,164,74,0.5); }
+.scr-world .view-btn.on { background: rgba(240,164,74,0.16); border-color: rgba(240,164,74,0.5); color: var(--h-ember); }
+.scr-world .view-btn svg { width: 14px; height: 14px; flex-shrink: 0; }
+
+/* how-to-use link (hearthlight) */
+.scr-world .howlink { background: transparent; border: none; cursor: pointer; font-family: 'Cinzel', serif; font-size: 12px; letter-spacing: 0.14em; text-transform: uppercase; color: rgba(247,236,216,0.5); transition: color 0.2s; padding: 7px 4px; white-space: nowrap; }
+.scr-world .howlink:hover { color: var(--h-ink); }
+
+/* hide-UI mode */
+@keyframes hideHintFade { 0%, 60% { opacity: 1; } 100% { opacity: 0; } }
+.scr-world .hide-hint {
+  position: absolute; bottom: 28px; left: 50%; transform: translateX(-50%); z-index: 5;
+  font-family: 'Cinzel', serif; font-size: 11px; letter-spacing: 0.18em; text-transform: uppercase;
+  color: rgba(247,236,216,0.55); background: rgba(20,13,8,0.5); padding: 8px 18px; border-radius: 9999px;
+  -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); border: 1px solid rgba(240,164,74,0.16);
+  animation: hideHintFade 4s ease forwards; pointer-events: none;
+}
+
+/* home tour: sub-screen preview mock */
+.home-tour-preview { position: fixed; right: 24px; bottom: 24px; z-index: 1101; display: flex; flex-direction: column; align-items: flex-end; gap: 8px; animation: viewIn 0.42s cubic-bezier(0.2,0.8,0.2,1); }
+.home-tour-preview .htp-label { font-family: 'Cinzel', serif; font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--h-ember); background: rgba(20,13,8,0.75); padding: 6px 14px; border-radius: 9999px; border: 1px solid rgba(240,164,74,0.3); }
+.home-tour-preview .htp-mock { width: 220px; border-radius: 16px; overflow: hidden; background: #15171a; border: 1px solid rgba(212,175,55,0.35); box-shadow: 0 20px 60px rgba(0,0,0,0.7); }
+.home-tour-preview .htp-video { width: 100%; aspect-ratio: 16/9; background: linear-gradient(135deg, #2a2014, #15100b); }
+.home-tour-preview .htp-row { display: flex; align-items: center; justify-content: space-between; padding: 8px 12px; gap: 8px; }
+.home-tour-preview .htp-time { font-family: 'Cinzel', serif; font-size: 14px; font-weight: 300; color: #f5e6d3; letter-spacing: 0.05em; }
+.home-tour-preview .htp-btn { background: rgba(212,175,55,0.15); border: 1px solid rgba(212,175,55,0.4); color: #f5e6d3; font-family: 'Cinzel', serif; font-size: 9px; letter-spacing: 0.18em; text-transform: uppercase; padding: 5px 12px; border-radius: 9999px; }
 
 .scr-world .controls { position: absolute; bottom: 48px; left: 40px; z-index: 10; display: flex; flex-direction: column; gap: 16px; width: 350px; }
 .scr-world .btn-start { padding: 17px 24px; border-radius: 9999px; font-family: 'Cinzel', serif; font-size: 1.25rem; letter-spacing: 0.3em; text-transform: uppercase; cursor: pointer; background: linear-gradient(180deg, #f2ad55, var(--h-ember-lo)); border: none; color: #241307; font-weight: 600; box-shadow: 0 8px 26px rgba(224,131,39,0.42), inset 0 1px 0 rgba(255,255,255,0.35); transition: all 0.25s; display: flex; align-items: center; justify-content: center; }
@@ -372,7 +397,9 @@ body.lang-ja .parchment .howlink, body.lang-ja .tour-btn { letter-spacing: 0.08e
 body.lang-ja .scr-setup .task-row input, body.lang-ja .scr-setup .custom-row input { font-family: var(--jp); }
 
 body.lang-ja .scr-world .info-head, body.lang-ja .scr-world .btn-end, body.lang-ja .scr-world .restart,
-body.lang-ja .scr-world .subscreen-btn, body.lang-ja .scr-world .paused-label, body.lang-ja .launch-tag {
+body.lang-ja .scr-world .view-btn, body.lang-ja .scr-world .paused-label, body.lang-ja .launch-tag,
+body.lang-ja .scr-world .howlink, body.lang-ja .scr-world .hide-hint,
+body.lang-ja .home-tour-preview .htp-label, body.lang-ja .home-tour-preview .htp-btn {
   font-family: var(--jp); text-transform: none; letter-spacing: 0.04em;
 }
 body.lang-ja .scr-world .btn-start { font-family: var(--jp); text-transform: none; letter-spacing: 0.14em; }
