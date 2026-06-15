@@ -54,7 +54,7 @@ export const dict = {
   tour_1:          { en: 'First, choose how your world will grow — <b>By Time</b> or <b>By Tasks</b>.', ja: 'まずは育て方を選びます——<b>時間で成長</b> か <b>タスクで成長</b>。' },
   tour_2:          { en: '<b>By Time</b>: set a goal — tap a 1–8h preset, or enter your own length.', ja: '<b>時間で成長</b>：目標を決めます。1〜8時間のプリセットを選ぶか、好きな長さを入力。' },
   tour_task:       { en: '<b>By Tasks</b>: list what you’ll do — finishing each one pushes the build forward, and clearing them all raises the whole town.', ja: '<b>タスクで成長</b>：やることを書き出します。終えるたびに建設が進み、すべて片づければ街がまるごと立ち上がります。' },
-  tour_3:          { en: 'Seal it and begin — the town rises as you stay focused.', ja: '封をして、はじめる——集中するほど街が育っていきます。' },
+  tour_3:          { en: 'Seal it and begin — the town rises as you stay focused.', ja: 'あとは作業を始めるだけ——集中するほど街が育っていきます。' },
   tour_4:          { en: '<b>Just start</b> is always here, on every screen, when you want to skip setup.', ja: '設定を飛ばしたいときは <b>とりあえず始める</b>。どの画面にもあります。' },
 
   /* ── Setup · first-run explanation (legacy, unused) ── */
