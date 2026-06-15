@@ -18,6 +18,7 @@ export const dict = {
   pause:           { en: 'PAUSE', ja: '一時停止' },
   end_session:     { en: 'END SESSION', ja: 'セッションを終える' },
   restart_world:   { en: 'Restart World', ja: '世界をリセット' },
+  start_over:      { en: 'Start Over', ja: '最初から' },
   paused:          { en: 'PAUSED', ja: '一時停止中' },
 
   /* ── Setup ── */

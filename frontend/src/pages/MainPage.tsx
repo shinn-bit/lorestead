@@ -46,10 +46,11 @@ export function MainPage({ onNavigate }: Props) {
   const { t } = useI18n();
 
   const [showEndSession, setShowEndSession]         = useState(false);
-  const [showRestartConfirm, setShowRestartConfirm] = useState(false);
+  const [endReturnsToSetup, setEndReturnsToSetup]   = useState(false);
   const [isMini, setIsMini]                         = useState(false);
   const [showScreenPrompt, setShowScreenPrompt]     = useState(false);
   const screenPromptShownRef                        = useRef(false);
+  const endedRef                                    = useRef(false);
   const { pipWindow, isSupported: isPipSupported, open: openPip, close: closePip, isOpen: isPipOpen } = usePictureInPicture(280, 210);
 
   const effectiveIsActive = isPipOpen || isActive;
@@ -106,13 +107,30 @@ export function MainPage({ onNavigate }: Props) {
     }
   }
 
-  function handleRestart() {
-    resetAll();
+  // END SESSION / 最初から を開く
+  function openEnd(returnToSetup: boolean) {
+    setEndReturnsToSetup(returnToSetup);
+    setShowEndSession(true);
+  }
+
+  // モーダル内で「終了が確定」したとき（生成 or タイムラプスなし終了）
+  function handleSessionEnded() {
+    endedRef.current = true;
+    reset();
     resetFrames();
     screenCapture.reset();
-    screenPromptShownRef.current = false;
-    setShowRestartConfirm(false);
-    clearConfig();
+  }
+
+  // モーダルを閉じたとき。設定に戻るモードかつ終了が確定済みなら Setup へ。
+  function handleEndClose() {
+    setShowEndSession(false);
+    if (endReturnsToSetup && endedRef.current) {
+      resetAll();
+      screenPromptShownRef.current = false;
+      clearConfig();
+    }
+    endedRef.current = false;
+    setEndReturnsToSetup(false);
   }
 
   if (isMini) {
@@ -221,19 +239,8 @@ export function MainPage({ onNavigate }: Props) {
         <button className={`btn-start ${isRunning ? 'running' : ''}`} onClick={isRunning ? pause : start}>
           {isRunning ? t('pause') : t('start')}
         </button>
-        <button className="btn-end" onClick={() => setShowEndSession(true)}>{t('end_session')}</button>
-
-        {!showRestartConfirm ? (
-          <button className="restart" onClick={() => setShowRestartConfirm(true)}>{t('restart_world')}</button>
-        ) : (
-          <div className="restart-confirm">
-            <p>{t('restart_confirm')}</p>
-            <div className="row">
-              <button className="cancel" onClick={() => setShowRestartConfirm(false)}>{t('cancel')}</button>
-              <button className="go" onClick={handleRestart}>{t('restart')}</button>
-            </div>
-          </div>
-        )}
+        <button className="btn-end" onClick={() => openEnd(false)}>{t('end_session')}</button>
+        <button className="restart" onClick={() => openEnd(true)}>{t('start_over')}</button>
       </div>
 
       {/* スクリーンキャプチャ：プロンプト */}
@@ -272,8 +279,8 @@ export function MainPage({ onNavigate }: Props) {
           sessionId={getSessionId()}
           frameCount={getFrameCount() + screenCapture.frameCount}
           getLocalFrames={getFramesForTimelapse}
-          onConfirm={() => { reset(); resetFrames(); screenCapture.reset(); }}
-          onClose={() => setShowEndSession(false)}
+          onConfirm={handleSessionEnded}
+          onClose={handleEndClose}
         />
       )}
 
