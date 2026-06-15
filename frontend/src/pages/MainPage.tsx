@@ -10,6 +10,7 @@ import { WorldPlayer } from '../components/World/WorldPlayer';
 import type { WorldPlayerHandle } from '../components/World/WorldPlayer';
 import { EndSessionModal } from '../components/EndSession/EndSessionModal';
 import { SetupScreen } from './SetupScreen';
+import { LanguageSelectScreen } from './LanguageSelectScreen';
 import { MiniPlayer, PiPView } from '../components/MiniPlayer/MiniPlayer';
 import { useFrameCapture } from '../hooks/useFrameCapture';
 import { useScreenCapture } from '../hooks/useScreenCapture';
@@ -43,7 +44,7 @@ export function MainPage({ onNavigate }: Props) {
   const { isRunning, elapsedSeconds, totalMinutes, start, pause, reset, resetAll } = useTimer();
   const { isActive } = useVisibility();
   const { config, setTimeMode, setTaskMode, setFreeMode, toggleTask, clearConfig } = useGrowthConfig();
-  const { t } = useI18n();
+  const { t, langChosen, chooseLang } = useI18n();
 
   const [showEndSession, setShowEndSession]         = useState(false);
   const [isMini, setIsMini]                         = useState(false);
@@ -73,8 +74,11 @@ export function MainPage({ onNavigate }: Props) {
     }
   }, [isRunning, screenCapture.isCapturing]);
 
-  // ── config 未設定：Setup 画面 ──
+  // ── config 未設定：初回のみ言語選択 → Setup 画面 ──
   if (!config) {
+    if (!langChosen) {
+      return <LanguageSelectScreen onSelect={chooseLang} />;
+    }
     return (
       <SetupScreen
         onStartTime={(targetMinutes) => { reset(); setTimeMode(targetMinutes); }}

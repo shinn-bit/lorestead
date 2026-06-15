@@ -194,6 +194,17 @@
 .scr-setup .juststart button:hover { color: var(--p-ember); }
 .scr-setup .juststart .note { display: block; margin-top: 5px; font-size: 15px; font-style: italic; color: var(--p-ink-faint); }
 
+/* ── Language Select (first-run, before Setup) ── */
+.scr-langselect .page { text-align: center; }
+.scr-langselect .langpaths { display: flex; flex-direction: column; gap: 14px; }
+.scr-langselect .langpath {
+  width: 100%; cursor: pointer; padding: 22px 24px; border: 1.5px solid var(--p-rule); border-radius: 14px;
+  background: radial-gradient(120% 130% at 50% 0%, rgba(255,252,242,0.7), rgba(255,252,242,0));
+  font-family: 'Cinzel', var(--jp); font-weight: 600; font-size: 19px; letter-spacing: 0.12em; color: var(--p-ink);
+  transition: all 0.18s; box-shadow: 0 1px 0 rgba(255,255,255,0.5) inset;
+}
+.scr-langselect .langpath:hover { border-color: var(--p-ember); transform: translateY(-2px); box-shadow: 0 10px 24px -12px rgba(156,61,20,0.5), 0 1px 0 rgba(255,255,255,0.5) inset; }
+
 .hidden { display: none !important; }
 
 /* ── Setup guided tour (spotlight over the real UI) ── */
