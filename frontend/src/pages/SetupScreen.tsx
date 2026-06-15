@@ -49,12 +49,14 @@ export function SetupScreen({ onStartTime, onStartTasks, onStartFree, onNavigate
 
   const pathsRef = useRef<HTMLDivElement>(null);
   const presetsRef = useRef<HTMLDivElement>(null);
+  const tasklistRef = useRef<HTMLDivElement>(null);
   const beginTimeRef = useRef<HTMLButtonElement>(null);
   const justStartRef = useRef<HTMLDivElement>(null);
 
   const TOUR: { view: WizardView; ref: React.RefObject<HTMLElement | null>; key: I18nKey }[] = [
     { view: 'choose', ref: pathsRef, key: 'tour_1' },
     { view: 'time', ref: presetsRef, key: 'tour_2' },
+    { view: 'task', ref: tasklistRef, key: 'tour_task' },
     { view: 'time', ref: beginTimeRef, key: 'tour_3' },
     { view: 'choose', ref: justStartRef, key: 'tour_4' },
   ];
@@ -211,7 +213,7 @@ export function SetupScreen({ onStartTime, onStartTasks, onStartFree, onNavigate
           <p className="sub">{t('task_hint')}</p>
           <div className="divider"><span className="line" /><span className="mark">✦</span><span className="line r" /></div>
 
-          <div className="tasklist">
+          <div className="tasklist" ref={tasklistRef}>
             {tasks.map((task, i) => (
               <div key={i} className="task-row">
                 <span className="num">{i + 1}</span>
