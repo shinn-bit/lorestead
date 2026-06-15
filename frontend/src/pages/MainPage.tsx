@@ -105,9 +105,13 @@ export function MainPage({ onNavigate }: Props) {
     }
   }
 
-  // END SESSION の最後：この設定のまま再開（セッション継続・設定保持）
+  // END SESSION の最後：同じ目標のまま最初の状態に戻してやり直す（設定は保持）
   function handleResume() {
     setShowEndSession(false);
+    resetAll();
+    resetFrames();
+    screenCapture.reset();
+    screenPromptShownRef.current = false;
   }
 
   // END SESSION の最後：進捗を破棄して設定画面へ戻る
