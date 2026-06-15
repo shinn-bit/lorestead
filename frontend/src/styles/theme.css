@@ -226,7 +226,7 @@
 /* ════════════════════════════════════════════════════════════════
    CHRONICLE / History  (.scr-chronicle)
    ════════════════════════════════════════════════════════════════ */
-.scr-chronicle { position: absolute; inset: 0; z-index: 100; overflow-y: auto; overflow-x: hidden; }
+.scr-chronicle { position: absolute; inset: 0; z-index: 1001; overflow-y: auto; overflow-x: hidden; }
 .scr-chronicle .topbar { position: sticky; background: linear-gradient(180deg, var(--paper-hi) 40%, rgba(239,230,207,0)); }
 .scr-chronicle .header { position: relative; z-index: 1; text-align: center; padding: 88px 40px 8px; }
 .scr-chronicle .eyebrow { font-family: 'Cinzel', serif; font-size: 11px; letter-spacing: 0.4em; text-transform: uppercase; color: var(--p-gold); }
