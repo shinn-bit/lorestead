@@ -138,10 +138,10 @@ export function HistoryPage({ onNavigate }: Props) {
 
                 {confirmingId === card.id && (
                   <div className="confirm" onClick={(e) => e.stopPropagation()}>
-                    <p>Delete this timelapse?</p>
+                    <p>{t('hist_delete_confirm')}</p>
                     <div className="confirm-btns">
-                      <button className="cancel" onClick={() => setConfirmingId(null)}>Cancel</button>
-                      <button className="del2" onClick={() => handleDelete(card.id)}>Delete</button>
+                      <button className="cancel" onClick={() => setConfirmingId(null)}>{t('cancel')}</button>
+                      <button className="del2" onClick={() => handleDelete(card.id)}>{t('delete_word')}</button>
                     </div>
                   </div>
                 )}

@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { generateTimelapse, downloadBlob } from '../../utils/timelapse';
 import { saveTimelapse } from '../../utils/timelapseStore';
 import type { GrowthMode } from '../../utils/stageCalculator';
+import { useI18n } from '../../i18n/I18nContext';
 
 type Phase = 'confirm' | 'generating' | 'done';
 
@@ -24,6 +25,7 @@ export function EndSessionModal({
   sessionId, frameCount, getLocalFrames,
   onClose, onConfirm,
 }: Props) {
+  const { t } = useI18n();
   const [phase, setPhase]       = useState<Phase>('confirm');
   const [progress, setProgress] = useState(0);
   const [videoUrl, setVideoUrl] = useState<string | null>(null);
@@ -77,7 +79,7 @@ export function EndSessionModal({
       onConfirm();
     } catch (e) {
       console.error(e);
-      setError('Failed to generate video. Please try again.');
+      setError(t('gen_failed'));
       setPhase('confirm');
     }
   }
@@ -104,13 +106,13 @@ export function EndSessionModal({
         {phase === 'confirm' && (
           <>
             <h2 className="text-center text-xl tracking-[0.15em] text-[#f5e6d3] uppercase">
-              End Session
+              {t('end_session')}
             </h2>
             <p className="text-center text-sm text-[#f5e6d3]/60 tracking-widest leading-relaxed">
-              Ready to wrap up?<br />
+              {t('end_ready')}<br />
               {frameCount > 0
-                ? `${frameCount} frames captured — generate your timelapse.`
-                : 'Timer just started — keep going to capture frames.'}
+                ? `${frameCount} ${t('end_frames')}`
+                : t('end_frames_none')}
             </p>
 
             <div className="flex flex-col gap-3 mt-2">
@@ -119,21 +121,21 @@ export function EndSessionModal({
                 disabled={currentStage < 1}
                 className="w-full py-4 rounded-full border border-[#d4af37]/70 text-[#f5e6d3] tracking-[0.2em] text-sm uppercase transition-all hover:bg-[#d4af37]/15 font-serif disabled:opacity-30 disabled:cursor-not-allowed"
               >
-                Generate Timelapse & End
+                {t('end_generate')}
               </button>
 
               <button
                 onClick={handleJustEnd}
                 className="w-full py-3 rounded-full border border-white/15 text-[#f5e6d3]/50 tracking-widest text-xs uppercase transition-all hover:bg-white/5 font-serif"
               >
-                End Without Timelapse
+                {t('end_without')}
               </button>
 
               <button
                 onClick={onClose}
                 className="w-full py-2 text-[#f5e6d3]/30 tracking-widest text-xs uppercase transition-all hover:text-[#f5e6d3]/60 font-serif"
               >
-                Cancel
+                {t('cancel')}
               </button>
             </div>
 
@@ -147,10 +149,10 @@ export function EndSessionModal({
         {phase === 'generating' && (
           <>
             <h2 className="text-center text-xl tracking-[0.15em] text-[#f5e6d3] uppercase">
-              Generating...
+              {t('generating')}
             </h2>
             <p className="text-center text-sm text-[#f5e6d3]/50 tracking-widest">
-              Creating your timelapse
+              {t('generating_sub')}
             </p>
 
             <div className="w-full h-2 bg-white/10 rounded-full overflow-hidden">
@@ -167,10 +169,10 @@ export function EndSessionModal({
         {phase === 'done' && (
           <>
             <h2 className="text-center text-xl tracking-[0.15em] text-[#f5e6d3] uppercase">
-              Complete
+              {t('complete')}
             </h2>
             <p className="text-center text-sm text-[#f5e6d3]/60 tracking-widest">
-              Your timelapse is ready.
+              {t('timelapse_ready')}
             </p>
 
             {videoUrl && (
@@ -192,13 +194,13 @@ export function EndSessionModal({
                 onClick={handleDownload}
                 className="w-full py-4 rounded-full border border-[#d4af37]/70 text-[#f5e6d3] tracking-[0.2em] text-sm uppercase transition-all hover:bg-[#d4af37]/15 font-serif"
               >
-                Download
+                {t('download')}
               </button>
               <button
                 onClick={onClose}
                 className="w-full py-2 text-[#f5e6d3]/30 tracking-widest text-xs uppercase transition-all hover:text-[#f5e6d3]/60 font-serif"
               >
-                Close
+                {t('close')}
               </button>
             </div>
           </>

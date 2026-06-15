@@ -1,9 +1,12 @@
+import { useI18n } from '../../i18n/I18nContext';
+
 interface Props {
   onEnable: () => void;
   onSkip:   () => void;
 }
 
 export function ScreenCapturePrompt({ onEnable, onSkip }: Props) {
+  const { t } = useI18n();
   return (
     <div
       style={{
@@ -36,7 +39,7 @@ export function ScreenCapturePrompt({ onEnable, onSkip }: Props) {
         color:         '#d4af37',
         marginBottom:  8,
       }}>
-        Record your screen?
+        {t('screen_prompt_title')}
       </p>
 
       <p style={{
@@ -45,8 +48,7 @@ export function ScreenCapturePrompt({ onEnable, onSkip }: Props) {
         color:        'rgba(245,230,200,0.6)',
         marginBottom: 16,
       }}>
-        Capture your work screen once per minute to create a personalized timelapse.
-        Saved only on this device — never uploaded.
+        {t('screen_prompt_body')}
       </p>
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
@@ -66,7 +68,7 @@ export function ScreenCapturePrompt({ onEnable, onSkip }: Props) {
             transition:    'all 0.2s',
           }}
         >
-          Select screen &amp; record
+          {t('screen_prompt_enable')}
         </button>
         <button
           onClick={onSkip}
@@ -82,7 +84,7 @@ export function ScreenCapturePrompt({ onEnable, onSkip }: Props) {
             cursor:        'pointer',
           }}
         >
-          Skip
+          {t('skip')}
         </button>
       </div>
     </div>

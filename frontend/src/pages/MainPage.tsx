@@ -168,7 +168,7 @@ export function MainPage({ onNavigate }: Props) {
           title={isPipOpen ? 'Close sub screen' : 'Open as floating sub screen'}
         >
           <span style={{ fontSize: 14, lineHeight: 1 }}>⊡</span>
-          <span style={{ whiteSpace: 'nowrap' }}>{isPipOpen ? 'Close Sub Screen' : t('sub_screen')}</span>
+          <span style={{ whiteSpace: 'nowrap' }}>{isPipOpen ? t('close_sub_screen') : t('sub_screen')}</span>
         </button>
       </div>
 
@@ -227,10 +227,10 @@ export function MainPage({ onNavigate }: Props) {
           <button className="restart" onClick={() => setShowRestartConfirm(true)}>{t('restart_world')}</button>
         ) : (
           <div className="restart-confirm">
-            <p>Reset and choose a new goal?</p>
+            <p>{t('restart_confirm')}</p>
             <div className="row">
-              <button className="cancel" onClick={() => setShowRestartConfirm(false)}>Cancel</button>
-              <button className="go" onClick={handleRestart}>Restart</button>
+              <button className="cancel" onClick={() => setShowRestartConfirm(false)}>{t('cancel')}</button>
+              <button className="go" onClick={handleRestart}>{t('restart')}</button>
             </div>
           </div>
         )}
@@ -258,7 +258,7 @@ export function MainPage({ onNavigate }: Props) {
           }}
         >
           <span style={{ width: 7, height: 7, borderRadius: '50%', background: '#e05555', display: 'inline-block', animation: 'pulse 1.4s infinite' }} />
-          REC {screenCapture.frameCount}f · Stop
+          REC {screenCapture.frameCount}f · {t('rec_stop')}
         </div>
       )}
 

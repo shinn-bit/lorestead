@@ -82,6 +82,37 @@ export const dict = {
   mode_free:       { en: 'Free', ja: 'フリー' },
   stage_word:      { en: 'Stage', ja: 'ステージ' },
 
+  /* ── World · sub screen / restart / capture ── */
+  close_sub_screen: { en: 'Close Sub Screen', ja: 'サブ画面を閉じる' },
+  restart_confirm:  { en: 'Reset and choose a new goal?', ja: 'リセットして新しい目標を選びますか？' },
+  cancel:           { en: 'Cancel', ja: 'キャンセル' },
+  restart:          { en: 'Restart', ja: 'リセット' },
+  rec_stop:         { en: 'Stop', ja: '停止' },
+
+  /* ── Screen capture prompt ── */
+  screen_prompt_title:  { en: 'Record your screen?', ja: '画面を録画しますか？' },
+  screen_prompt_body:   { en: 'Capture your work screen once per minute to create a personalized timelapse. Saved only on this device — never uploaded.', ja: '作業画面を1分に1回キャプチャして、自分だけのタイムラプスを作成します。この端末にのみ保存され、アップロードはされません。' },
+  screen_prompt_enable: { en: 'Select screen & record', ja: '画面を選んで録画' },
+  skip:                 { en: 'Skip', ja: 'スキップ' },
+
+  /* ── End session modal ── */
+  end_ready:        { en: 'Ready to wrap up?', ja: '終了しますか？' },
+  end_frames:       { en: 'frames captured — generate your timelapse.', ja: '個のフレームを取得——タイムラプスを作成できます。' },
+  end_frames_none:  { en: 'Timer just started — keep going to capture frames.', ja: '計測を始めたばかりです——フレームが貯まるまで続けましょう。' },
+  end_generate:     { en: 'Generate Timelapse & End', ja: 'タイムラプスを作成して終了' },
+  end_without:      { en: 'End Without Timelapse', ja: 'タイムラプスなしで終了' },
+  generating:       { en: 'Generating...', ja: '生成中...' },
+  generating_sub:   { en: 'Creating your timelapse', ja: 'タイムラプスを作成しています' },
+  complete:         { en: 'Complete', ja: '完成' },
+  timelapse_ready:  { en: 'Your timelapse is ready.', ja: 'タイムラプスができました。' },
+  download:         { en: 'Download', ja: 'ダウンロード' },
+  close:            { en: 'Close', ja: '閉じる' },
+  gen_failed:       { en: 'Failed to generate video. Please try again.', ja: '動画の生成に失敗しました。もう一度お試しください。' },
+
+  /* ── Chronicle · delete ── */
+  hist_delete_confirm: { en: 'Delete this timelapse?', ja: 'このタイムラプスを削除しますか？' },
+  delete_word:         { en: 'Delete', ja: '削除' },
+
   /* ── Loading / misc ── */
   loading:         { en: 'Loading...', ja: '読み込み中...' },
 } satisfies Record<string, Entry>;
