@@ -110,6 +110,10 @@ export const dict = {
   download:         { en: 'Download', ja: 'ダウンロード' },
   close:            { en: 'Close', ja: '閉じる' },
   gen_failed:       { en: 'Failed to generate video. Please try again.', ja: '動画の生成に失敗しました。もう一度お試しください。' },
+  session_ended:    { en: 'Session wrapped up.', ja: 'お疲れさまでした。' },
+  choose_next:      { en: 'What next?', ja: '次はどうしますか？' },
+  resume_same:      { en: 'Resume with this goal', ja: 'この設定のまま再開' },
+  back_to_setup:    { en: 'Back to Setup', ja: '設定に戻る' },
 
   /* ── Chronicle · delete ── */
   hist_delete_confirm: { en: 'Delete this timelapse?', ja: 'このタイムラプスを削除しますか？' },

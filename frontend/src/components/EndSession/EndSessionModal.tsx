@@ -16,14 +16,18 @@ interface Props {
   frameCount: number;
   /** IndexedDBからローカルフレームを取得する関数 */
   getLocalFrames: () => Promise<Blob[]>;
-  onClose: () => void;
-  onConfirm: () => void;
+  /** 確認画面でキャンセル（セッション継続） */
+  onCancel: () => void;
+  /** この設定のまま再開（セッションは継続、設定は保持） */
+  onResume: () => void;
+  /** 設定画面に戻る（進捗を破棄して再設定） */
+  onBackToSetup: () => void;
 }
 
 export function EndSessionModal({
   mode, currentStage, totalMinutes, sessionSeconds, isCompleted,
   sessionId, frameCount, getLocalFrames,
-  onClose, onConfirm,
+  onCancel, onResume, onBackToSetup,
 }: Props) {
   const { t } = useI18n();
   const [phase, setPhase]       = useState<Phase>('confirm');
@@ -76,7 +80,6 @@ export function EndSessionModal({
       await persistToHistory(result);
 
       setPhase('done');
-      onConfirm();
     } catch (e) {
       console.error(e);
       setError(t('gen_failed'));
@@ -85,8 +88,7 @@ export function EndSessionModal({
   }
 
   function handleJustEnd() {
-    onConfirm();
-    onClose();
+    setPhase('done');
   }
 
   function handleDownload() {
@@ -132,7 +134,7 @@ export function EndSessionModal({
               </button>
 
               <button
-                onClick={onClose}
+                onClick={onCancel}
                 className="w-full py-2 text-[#f5e6d3]/30 tracking-widest text-xs uppercase transition-all hover:text-[#f5e6d3]/60 font-serif"
               >
                 {t('cancel')}
@@ -165,42 +167,56 @@ export function EndSessionModal({
           </>
         )}
 
-        {/* ── Done ── */}
+        {/* ── Done → next action ── */}
         {phase === 'done' && (
           <>
             <h2 className="text-center text-xl tracking-[0.15em] text-[#f5e6d3] uppercase">
-              {t('complete')}
+              {videoUrl ? t('complete') : t('session_ended')}
             </h2>
-            <p className="text-center text-sm text-[#f5e6d3]/60 tracking-widest">
-              {t('timelapse_ready')}
-            </p>
-
             {videoUrl && (
-              <div className="w-full rounded-2xl overflow-hidden border border-[#d4af37]/20 bg-black">
-                <video
-                  ref={videoRef}
-                  src={videoUrl}
-                  autoPlay
-                  loop
-                  controls
-                  className="w-full"
-                  style={{ maxHeight: 240, objectFit: 'contain' }}
-                />
-              </div>
+              <p className="text-center text-sm text-[#f5e6d3]/60 tracking-widest">
+                {t('timelapse_ready')}
+              </p>
             )}
 
-            <div className="flex flex-col gap-3 mt-2">
+            {videoUrl && (
+              <>
+                <div className="w-full rounded-2xl overflow-hidden border border-[#d4af37]/20 bg-black">
+                  <video
+                    ref={videoRef}
+                    src={videoUrl}
+                    autoPlay
+                    loop
+                    controls
+                    className="w-full"
+                    style={{ maxHeight: 240, objectFit: 'contain' }}
+                  />
+                </div>
+                <button
+                  onClick={handleDownload}
+                  className="w-full py-3 rounded-full border border-[#d4af37]/70 text-[#f5e6d3] tracking-[0.2em] text-sm uppercase transition-all hover:bg-[#d4af37]/15 font-serif"
+                >
+                  {t('download')}
+                </button>
+              </>
+            )}
+
+            {/* 次の行動を選択 */}
+            <div className="flex flex-col gap-3 mt-1">
+              <p className="text-center text-xs text-[#f5e6d3]/40 tracking-[0.2em] uppercase">
+                {t('choose_next')}
+              </p>
               <button
-                onClick={handleDownload}
-                className="w-full py-4 rounded-full border border-[#d4af37]/70 text-[#f5e6d3] tracking-[0.2em] text-sm uppercase transition-all hover:bg-[#d4af37]/15 font-serif"
+                onClick={onResume}
+                className="w-full py-4 rounded-full bg-[#d4af37]/15 border border-[#d4af37]/55 text-[#f5e6d3] tracking-[0.2em] text-sm uppercase transition-all hover:bg-[#d4af37]/25 font-serif"
               >
-                {t('download')}
+                {t('resume_same')}
               </button>
               <button
-                onClick={onClose}
-                className="w-full py-2 text-[#f5e6d3]/30 tracking-widest text-xs uppercase transition-all hover:text-[#f5e6d3]/60 font-serif"
+                onClick={onBackToSetup}
+                className="w-full py-3 rounded-full border border-white/15 text-[#f5e6d3]/55 tracking-widest text-xs uppercase transition-all hover:bg-white/5 font-serif"
               >
-                {t('close')}
+                {t('back_to_setup')}
               </button>
             </div>
           </>
