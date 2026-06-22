@@ -9,9 +9,23 @@
 
 ---
 
+![Splash](docs/screenshots/01_splash.png)
+
+---
+
 ## 概要
 
 Loresteadは、集中タイマーと「世界育成」のゲーム体験を融合させたWebアプリです。セッション開始時に成長モードを選び、タイマーを動かすたびに画面いっぱいに広がる中世の街が5段階で進化します。ログイン不要・完全クライアントサイドで動作します。
+
+## スクリーンショット
+
+| セットアップ | メイン画面 |
+|---|---|
+| ![Setup](docs/screenshots/02_setup.png) | ![Home](docs/screenshots/03_home.png) |
+
+| タスクモード |  |
+|---|---|
+| ![Tasks](docs/screenshots/04_tasks.png) | |
 
 ## 機能
 
