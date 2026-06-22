@@ -1,230 +1,162 @@
-import { useRef, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
+import { listTimelapses, deleteTimelapse, type TimelapseRecord } from '../utils/timelapseStore';
+import { downloadBlob } from '../utils/timelapse';
+import { useI18n } from '../i18n/I18nContext';
+import { LangToggle } from '../components/LangToggle';
+import type { View } from '../App';
+import type { I18nKey } from '../i18n/dict';
 
-export interface HistoryItem {
-  id: string;
-  date: string;
-  totalMinutes: number;
-  sessionMinutes: number;
-  stage: number;
-  isCompleted: boolean;
-  timelapseUrl?: string;
+interface CardData extends TimelapseRecord {
+  url: string;
+}
+
+const MODE_KEY: Record<TimelapseRecord['mode'], I18nKey> = {
+  time: 'mode_time',
+  task: 'mode_tasks',
+  free: 'mode_free',
+};
+
+function formatDate(ts: number): string {
+  const d = new Date(ts);
+  const p = (n: number) => String(n).padStart(2, '0');
+  return `${d.getFullYear()} / ${p(d.getMonth() + 1)} / ${p(d.getDate())} · ${p(d.getHours())}:${p(d.getMinutes())}`;
 }
 
 function formatDuration(minutes: number): string {
   const h = Math.floor(minutes / 60);
   const m = Math.round(minutes % 60);
-  if (h > 0) return `${h}h ${m}m`;
-  return `${m}m`;
+  return `${h}h ${String(m).padStart(2, '0')}m`;
 }
 
-function StageThumbnail({ stage }: { stage: number }) {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-
-    const video = document.createElement('video');
-    video.muted = true;
-    video.playsInline = true;
-    video.crossOrigin = 'anonymous';
-    video.src = `/assets/worlds/prague/stage_0${stage}.mp4`;
-
-    video.addEventListener('loadedmetadata', () => {
-      video.currentTime = Math.min(1.0, video.duration * 0.3);
-    }, { once: true });
-
-    video.addEventListener('seeked', () => {
-      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-    }, { once: true });
-
-    video.addEventListener('error', () => {
-      const grad = ctx.createLinearGradient(0, 0, 0, canvas.height);
-      grad.addColorStop(0, '#1e2128');
-      grad.addColorStop(1, '#0f1114');
-      ctx.fillStyle = grad;
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
-    }, { once: true });
-
-    video.load();
-  }, [stage]);
-
-  return (
-    <canvas ref={canvasRef} width={440} height={440} className="history-card-thumb" />
-  );
-}
+const HomeIcon = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" /><polyline points="9 22 9 12 15 12 15 22" /></svg>
+);
+const ScrollIcon = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 3v5h5" /><path d="M3.05 13A9 9 0 1 0 6 5.3L3 8" /><polyline points="12 7 12 12 15 15" /></svg>
+);
+const SaveIcon = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="7 10 12 15 17 10" /><line x1="12" y1="15" x2="12" y2="3" /></svg>
+);
 
 interface Props {
-  items: HistoryItem[];
-  loading: boolean;
-  isLoggedIn: boolean;
-  onResume: (totalMinutes: number) => void;
-  onDelete: (id: string) => void;
-  onSignIn: () => void;
+  onNavigate: (view: View) => void;
 }
 
-export function HistoryPage({ items, loading, isLoggedIn, onResume, onDelete, onSignIn }: Props) {
+export function HistoryPage({ onNavigate }: Props) {
+  const { t } = useI18n();
+  const [cards, setCards] = useState<CardData[] | null>(null);
   const [confirmingId, setConfirmingId] = useState<string | null>(null);
 
-  function handleDownload(item: HistoryItem) {
-    if (!item.timelapseUrl) return;
-    const a = document.createElement('a');
-    a.href = item.timelapseUrl;
-    a.download = `lorestead_${item.date.replace(/[/ :]/g, '-')}.mp4`;
-    a.click();
+  useEffect(() => {
+    const urls: string[] = [];
+    let cancelled = false;
+
+    listTimelapses()
+      .then((records) => {
+        if (cancelled) return;
+        const data = records.map((r) => {
+          const url = URL.createObjectURL(r.blob);
+          urls.push(url);
+          return { ...r, url };
+        });
+        setCards(data);
+      })
+      .catch((e) => {
+        console.error('Failed to load timelapses', e);
+        if (!cancelled) setCards([]);
+      });
+
+    return () => {
+      cancelled = true;
+      urls.forEach((u) => URL.revokeObjectURL(u));
+    };
+  }, []);
+
+  function handleDownload(card: CardData) {
+    const date = formatDate(card.createdAt).replace(/[/ :·]/g, '-').replace(/-+/g, '-');
+    const ext = card.blob.type.includes('mp4') ? 'mp4' : 'webm';
+    downloadBlob(card.blob, `lorestead_${date}.${ext}`);
   }
 
-  // ローディング中
-  if (loading) {
-    return (
-      <div className="absolute inset-0 flex items-center justify-center">
-        <p style={{ fontFamily: "'Cinzel', serif", fontSize: '13px', color: 'rgba(245,230,211,0.4)', letterSpacing: '0.2em' }}>
-          Loading...
-        </p>
-      </div>
-    );
-  }
-
-  // 未ログイン
-  if (!isLoggedIn) {
-    return (
-      <div className="absolute inset-0 flex flex-col items-center justify-center gap-6">
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px' }}>
-          <p style={{
-            fontFamily: "'Cinzel', serif",
-            fontSize: '18px',
-            color: '#f5e6d3',
-            letterSpacing: '0.15em',
-            textTransform: 'uppercase',
-          }}>
-            Your History
-          </p>
-          <p style={{
-            fontFamily: 'sans-serif',
-            fontSize: '13px',
-            color: 'rgba(245,230,211,0.45)',
-            letterSpacing: '0.05em',
-            textAlign: 'center',
-            lineHeight: '1.6',
-          }}>
-            Sign in to save your sessions<br />and track your world's growth over time.
-          </p>
-        </div>
-        <button
-          onClick={onSignIn}
-          style={{
-            background: 'rgba(212,175,55,0.12)',
-            border: '1px solid rgba(212,175,55,0.5)',
-            color: '#f5e6d3',
-            fontFamily: "'Cinzel', serif",
-            fontSize: '12px',
-            letterSpacing: '0.2em',
-            textTransform: 'uppercase',
-            padding: '14px 36px',
-            borderRadius: '9999px',
-            cursor: 'pointer',
-          }}
-        >
-          Sign In
-        </button>
-      </div>
-    );
-  }
-
-  // データなし
-  if (items.length === 0) {
-    return (
-      <div className="absolute inset-0 flex flex-col items-center justify-center gap-4">
-        <p style={{ fontFamily: "'Cinzel', serif", fontSize: '13px', color: 'rgba(245,230,211,0.4)', letterSpacing: '0.15em' }}>
-          No sessions yet. Start your first session.
-        </p>
-      </div>
-    );
+  async function handleDelete(id: string) {
+    try { await deleteTimelapse(id); } catch (e) { console.error('Failed to delete timelapse', e); }
+    setCards((prev) => {
+      const target = prev?.find((c) => c.id === id);
+      if (target) URL.revokeObjectURL(target.url);
+      return prev ? prev.filter((c) => c.id !== id) : prev;
+    });
+    setConfirmingId(null);
   }
 
   return (
-    <div
-      className="absolute inset-0 overflow-y-auto custom-scrollbar"
-      style={{ padding: '96px 40px 0' }}
-    >
-      <div className="history-grid">
-        {items.map((item) => (
-          <div key={item.id} className="history-card">
+    <div className="scr-chronicle parchment">
+      {/* Top bar */}
+      <div className="topbar">
+        <div className="wordmark">LORE<b>STEAD</b></div>
+        <div className="topbar-right">
+          <LangToggle />
+          <nav className="nav">
+            <button onClick={() => onNavigate('home')}><HomeIcon /> Home</button>
+            <button className="active"><ScrollIcon /> Chronicle</button>
+          </nav>
+        </div>
+      </div>
 
-            {/* ── サムネイルカード ── */}
-            <div className="history-card-image">
-              <StageThumbnail stage={item.stage} />
+      {/* Header */}
+      <div className="header">
+        <div className="eyebrow">{t('hist_eyebrow')}</div>
+        <h1>{t('hist_h1')}</h1>
+        <p className="sub">{t('hist_sub')}</p>
+        <div className="divider"><span className="line" /><span className="mark">✦</span><span className="line r" /></div>
+      </div>
 
-              {/* 削除ボタン */}
-              <button
-                className="history-card-delete"
-                onClick={(e) => { e.stopPropagation(); setConfirmingId(item.id); }}
-                title="Delete"
-              >
-                ×
-              </button>
+      {/* Loading */}
+      {cards === null && (
+        <div className="empty"><p>{t('loading')}</p></div>
+      )}
 
-              {/* 削除確認オーバーレイ */}
-              {confirmingId === item.id && (
-                <div className="history-card-confirm">
-                  <p>Delete this session?</p>
-                  <div className="history-confirm-btns">
-                    <button
-                      className="history-confirm-cancel"
-                      onClick={() => setConfirmingId(null)}
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      className="history-confirm-delete"
-                      onClick={() => { onDelete(item.id); setConfirmingId(null); }}
-                    >
-                      Delete
-                    </button>
+      {/* Empty */}
+      {cards !== null && cards.length === 0 && (
+        <div className="empty">
+          <h2>{t('hist_empty_h')}</h2>
+          <p dangerouslySetInnerHTML={{ __html: t('hist_empty_p') }} />
+        </div>
+      )}
+
+      {/* Grid */}
+      {cards !== null && cards.length > 0 && (
+        <div className="grid">
+          {cards.map((card) => (
+            <div key={card.id} className="card">
+              <div className="frame">
+                <video src={card.url} muted loop autoPlay playsInline />
+                <div className={`status ${card.isCompleted ? 'done' : 'active'}`}>
+                  {card.isCompleted ? t('status_done') : t('status_active')}
+                </div>
+                <button className="del" title="Delete" onClick={(e) => { e.stopPropagation(); setConfirmingId(card.id); }}>×</button>
+                <div className="play"><span>▶</span></div>
+
+                {confirmingId === card.id && (
+                  <div className="confirm" onClick={(e) => e.stopPropagation()}>
+                    <p>{t('hist_delete_confirm')}</p>
+                    <div className="confirm-btns">
+                      <button className="cancel" onClick={() => setConfirmingId(null)}>{t('cancel')}</button>
+                      <button className="del2" onClick={() => handleDelete(card.id)}>{t('delete_word')}</button>
+                    </div>
                   </div>
+                )}
+              </div>
+              <div className="meta">
+                <div className="date">{formatDate(card.createdAt)}</div>
+                <div className="info">
+                  <span className="desc">{t(MODE_KEY[card.mode])} · {t('stage_word')} {card.stage} · {formatDuration(card.durationMinutes)}</span>
+                  <button className="dl" onClick={() => handleDownload(card)}><SaveIcon /><span>{t('save_word')}</span></button>
                 </div>
-              )}
-
-              {/* ホバー時アクションオーバーレイ（確認中は非表示） */}
-              {confirmingId !== item.id && (
-                <div className="history-card-overlay">
-                  {item.isCompleted ? (
-                    <button
-                      className="history-card-action history-card-action-download"
-                      onClick={() => handleDownload(item)}
-                    >
-                      Download Timelapse
-                    </button>
-                  ) : (
-                    <button
-                      className="history-card-action history-card-action-resume"
-                      onClick={() => onResume(item.totalMinutes)}
-                    >
-                      Resume Session
-                    </button>
-                  )}
-                </div>
-              )}
-            </div>
-
-            {/* ── メタ情報 ── */}
-            <div className="history-card-meta">
-              <div className="history-card-date">{item.date}</div>
-              <div className="history-card-info">
-                <span className="history-card-stage">
-                  Stage {item.stage} · {formatDuration(item.sessionMinutes)}
-                </span>
-                <span className={`history-card-status ${item.isCompleted ? 'history-status-complete' : 'history-status-active'}`}>
-                  {item.isCompleted ? 'Done' : 'Active'}
-                </span>
               </div>
             </div>
-
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

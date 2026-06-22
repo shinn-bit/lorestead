@@ -33,12 +33,12 @@ export function DebugPanel({ totalMinutes, onSetMinutes, onClose }: Props) {
               style={{
                 background:
                   totalMinutes >= t.minutes &&
-                  (t.stage === 9 || totalMinutes < (STAGE_THRESHOLDS[t.stage]?.minutes ?? Infinity))
+                  (t.stage === STAGE_THRESHOLDS.length || totalMinutes < (STAGE_THRESHOLDS[t.stage]?.minutes ?? Infinity))
                     ? 'rgba(255,80,80,0.2)'
                     : 'rgba(255,255,255,0.06)',
                 border:
                   totalMinutes >= t.minutes &&
-                  (t.stage === 9 || totalMinutes < (STAGE_THRESHOLDS[t.stage]?.minutes ?? Infinity))
+                  (t.stage === STAGE_THRESHOLDS.length || totalMinutes < (STAGE_THRESHOLDS[t.stage]?.minutes ?? Infinity))
                     ? '1px solid rgba(255,80,80,0.4)'
                     : '1px solid transparent',
               }}

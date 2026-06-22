@@ -1,27 +1,35 @@
 import { useState, useEffect, useRef } from 'react';
-import { timelapseApi } from '../../api/client';
 import { generateTimelapse, downloadBlob } from '../../utils/timelapse';
+import { saveTimelapse } from '../../utils/timelapseStore';
+import type { GrowthMode } from '../../utils/stageCalculator';
+import { useI18n } from '../../i18n/I18nContext';
 
 type Phase = 'confirm' | 'generating' | 'done';
 
 interface Props {
+  mode: GrowthMode;
   currentStage: number;
   totalMinutes: number;
   sessionSeconds: number;
+  isCompleted: boolean;
   sessionId: string;
   frameCount: number;
   /** IndexedDBからローカルフレームを取得する関数 */
   getLocalFrames: () => Promise<Blob[]>;
-  accessToken: string | null;
-  onClose: () => void;
-  onConfirm: () => void;
+  /** 確認画面でキャンセル（セッション継続） */
+  onCancel: () => void;
+  /** この設定のまま再開（セッションは継続、設定は保持） */
+  onResume: () => void;
+  /** 設定画面に戻る（進捗を破棄して再設定） */
+  onBackToSetup: () => void;
 }
 
 export function EndSessionModal({
-  currentStage, totalMinutes, sessionSeconds,
-  sessionId, frameCount, getLocalFrames, accessToken,
-  onClose, onConfirm,
+  mode, currentStage, totalMinutes, sessionSeconds, isCompleted,
+  sessionId, frameCount, getLocalFrames,
+  onCancel, onResume, onBackToSetup,
 }: Props) {
+  const { t } = useI18n();
   const [phase, setPhase]       = useState<Phase>('confirm');
   const [progress, setProgress] = useState(0);
   const [videoUrl, setVideoUrl] = useState<string | null>(null);
@@ -29,8 +37,23 @@ export function EndSessionModal({
   const [error, setError]       = useState('');
   const videoRef                = useRef<HTMLVideoElement>(null);
 
-  // サーバー生成の場合はURLをそのまま使う
-  const isServerGeneration = !!accessToken && frameCount > 0;
+  // 生成した動画をローカル履歴(IndexedDB)に保存
+  async function persistToHistory(videoBlob: Blob | null) {
+    if (!videoBlob) return;
+    try {
+      await saveTimelapse({
+        id: sessionId || `tl_${Date.now()}`,
+        createdAt: Date.now(),
+        mode,
+        stage: currentStage,
+        durationMinutes: Math.round(sessionSeconds / 60),
+        isCompleted,
+        blob: videoBlob,
+      });
+    } catch (e) {
+      console.error('Failed to save timelapse to history', e);
+    }
+  }
 
   useEffect(() => {
     return () => { if (videoUrl && blob) URL.revokeObjectURL(videoUrl); };
@@ -42,61 +65,36 @@ export function EndSessionModal({
     setError('');
 
     try {
-      if (isServerGeneration) {
-        // ─── サーバー側生成（S3フレーム → Lambda FFmpeg） ───
-        setProgress(20);
-        const { downloadUrl } = await timelapseApi.generate(
-          accessToken,
-          sessionId,
-          frameCount,
-          totalMinutes,
-          sessionSeconds,
-        );
-        setProgress(100);
-        setVideoUrl(downloadUrl);
-        setBlob(null); // presigned URLなのでBlob不要
-      } else {
-        // ─── ブラウザ側生成（ローカルキャプチャフレーム → なければ動画フォールバック） ───
-        const localFrames = await getLocalFrames();
-        const result = await generateTimelapse(
-          currentStage,
-          totalMinutes,
-          sessionSeconds,
-          localFrames,
-          (ratio) => setProgress(Math.round(ratio * 100)),
-        );
-        const url = URL.createObjectURL(result);
-        setBlob(result);
-        setVideoUrl(url);
-      }
+      // ブラウザ側生成（ローカルキャプチャフレーム → なければ動画フォールバック）
+      const localFrames = await getLocalFrames();
+      const result = await generateTimelapse(
+        currentStage,
+        totalMinutes,
+        sessionSeconds,
+        localFrames,
+        (ratio) => setProgress(Math.round(ratio * 100)),
+      );
+      const url = URL.createObjectURL(result);
+      setBlob(result);
+      setVideoUrl(url);
+      await persistToHistory(result);
 
       setPhase('done');
-      onConfirm();
     } catch (e) {
       console.error(e);
-      setError('Failed to generate video. Please try again.');
+      setError(t('gen_failed'));
       setPhase('confirm');
     }
   }
 
   function handleJustEnd() {
-    onConfirm();
-    onClose();
+    setPhase('done');
   }
 
   function handleDownload() {
-    if (!videoUrl) return;
-    if (blob) {
-      // ブラウザ生成Blob
-      const date = new Date().toISOString().slice(0, 10);
-      downloadBlob(blob, `lorestead_${date}.webm`);
-    } else {
-      // サーバー生成presigned URL → 直接リンク
-      const a = document.createElement('a');
-      a.href = videoUrl;
-      a.download = `lorestead_${new Date().toISOString().slice(0, 10)}.mp4`;
-      a.click();
-    }
+    if (!blob) return;
+    const date = new Date().toISOString().slice(0, 10);
+    downloadBlob(blob, `lorestead_${date}.webm`);
   }
 
   return (
@@ -110,36 +108,36 @@ export function EndSessionModal({
         {phase === 'confirm' && (
           <>
             <h2 className="text-center text-xl tracking-[0.15em] text-[#f5e6d3] uppercase">
-              End Session
+              {t('end_session')}
             </h2>
             <p className="text-center text-sm text-[#f5e6d3]/60 tracking-widest leading-relaxed">
-              Ready to wrap up?<br />
+              {t('end_ready')}<br />
               {frameCount > 0
-                ? `${frameCount} frames captured — generate your timelapse.`
-                : 'Timer just started — keep going to capture frames.'}
+                ? `${frameCount} ${t('end_frames')}`
+                : t('end_frames_none')}
             </p>
 
             <div className="flex flex-col gap-3 mt-2">
               <button
                 onClick={handleGenerate}
-                disabled={!isServerGeneration && !currentStage}
+                disabled={currentStage < 1}
                 className="w-full py-4 rounded-full border border-[#d4af37]/70 text-[#f5e6d3] tracking-[0.2em] text-sm uppercase transition-all hover:bg-[#d4af37]/15 font-serif disabled:opacity-30 disabled:cursor-not-allowed"
               >
-                Generate Timelapse & End
+                {t('end_generate')}
               </button>
 
               <button
                 onClick={handleJustEnd}
                 className="w-full py-3 rounded-full border border-white/15 text-[#f5e6d3]/50 tracking-widest text-xs uppercase transition-all hover:bg-white/5 font-serif"
               >
-                End Without Timelapse
+                {t('end_without')}
               </button>
 
               <button
-                onClick={onClose}
+                onClick={onCancel}
                 className="w-full py-2 text-[#f5e6d3]/30 tracking-widest text-xs uppercase transition-all hover:text-[#f5e6d3]/60 font-serif"
               >
-                Cancel
+                {t('cancel')}
               </button>
             </div>
 
@@ -153,10 +151,10 @@ export function EndSessionModal({
         {phase === 'generating' && (
           <>
             <h2 className="text-center text-xl tracking-[0.15em] text-[#f5e6d3] uppercase">
-              Generating...
+              {t('generating')}
             </h2>
             <p className="text-center text-sm text-[#f5e6d3]/50 tracking-widest">
-              {isServerGeneration ? 'Processing on server with FFmpeg' : 'Creating your timelapse'}
+              {t('generating_sub')}
             </p>
 
             <div className="w-full h-2 bg-white/10 rounded-full overflow-hidden">
@@ -169,42 +167,56 @@ export function EndSessionModal({
           </>
         )}
 
-        {/* ── Done ── */}
+        {/* ── Done → next action ── */}
         {phase === 'done' && (
           <>
             <h2 className="text-center text-xl tracking-[0.15em] text-[#f5e6d3] uppercase">
-              Complete
+              {videoUrl ? t('complete') : t('session_ended')}
             </h2>
-            <p className="text-center text-sm text-[#f5e6d3]/60 tracking-widest">
-              Your timelapse is ready.
-            </p>
-
             {videoUrl && (
-              <div className="w-full rounded-2xl overflow-hidden border border-[#d4af37]/20 bg-black">
-                <video
-                  ref={videoRef}
-                  src={videoUrl}
-                  autoPlay
-                  loop
-                  controls
-                  className="w-full"
-                  style={{ maxHeight: 240, objectFit: 'contain' }}
-                />
-              </div>
+              <p className="text-center text-sm text-[#f5e6d3]/60 tracking-widest">
+                {t('timelapse_ready')}
+              </p>
             )}
 
-            <div className="flex flex-col gap-3 mt-2">
+            {videoUrl && (
+              <>
+                <div className="w-full rounded-2xl overflow-hidden border border-[#d4af37]/20 bg-black">
+                  <video
+                    ref={videoRef}
+                    src={videoUrl}
+                    autoPlay
+                    loop
+                    controls
+                    className="w-full"
+                    style={{ maxHeight: 240, objectFit: 'contain' }}
+                  />
+                </div>
+                <button
+                  onClick={handleDownload}
+                  className="w-full py-3 rounded-full border border-[#d4af37]/70 text-[#f5e6d3] tracking-[0.2em] text-sm uppercase transition-all hover:bg-[#d4af37]/15 font-serif"
+                >
+                  {t('download')}
+                </button>
+              </>
+            )}
+
+            {/* 次の行動を選択 */}
+            <div className="flex flex-col gap-3 mt-1">
+              <p className="text-center text-xs text-[#f5e6d3]/40 tracking-[0.2em] uppercase">
+                {t('choose_next')}
+              </p>
               <button
-                onClick={handleDownload}
-                className="w-full py-4 rounded-full border border-[#d4af37]/70 text-[#f5e6d3] tracking-[0.2em] text-sm uppercase transition-all hover:bg-[#d4af37]/15 font-serif"
+                onClick={onResume}
+                className="w-full py-4 rounded-full bg-[#d4af37]/15 border border-[#d4af37]/55 text-[#f5e6d3] tracking-[0.2em] text-sm uppercase transition-all hover:bg-[#d4af37]/25 font-serif"
               >
-                Download
+                {t('resume_same')}
               </button>
               <button
-                onClick={onClose}
-                className="w-full py-2 text-[#f5e6d3]/30 tracking-widest text-xs uppercase transition-all hover:text-[#f5e6d3]/60 font-serif"
+                onClick={onBackToSetup}
+                className="w-full py-3 rounded-full border border-white/15 text-[#f5e6d3]/55 tracking-widest text-xs uppercase transition-all hover:bg-white/5 font-serif"
               >
-                Close
+                {t('back_to_setup')}
               </button>
             </div>
           </>

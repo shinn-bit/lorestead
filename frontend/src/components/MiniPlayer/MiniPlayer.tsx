@@ -1,10 +1,11 @@
 import { useEffect, useRef } from 'react';
 import { useDraggable } from '../../hooks/useDraggable';
-import { getVideoConfig } from '../../utils/stageCalculator';
+import { getVideoConfig, MAX_STAGE } from '../../utils/stageCalculator';
+import { useI18n } from '../../i18n/I18nContext';
 
 function getLoopSrc(stage: number): string {
   const config = getVideoConfig(stage);
-  return config.loopSrc ?? (getVideoConfig(8).loopSrc as string);
+  return config.loopSrc ?? (getVideoConfig(MAX_STAGE).loopSrc as string);
 }
 
 // ── PiP window content (no dragging — OS handles window dragging) ──────────
@@ -18,6 +19,7 @@ interface PiPProps {
 }
 
 export function PiPView({ stage, isRunning, isActive, totalAccumulatedTime, onTogglePlay, onClose }: PiPProps) {
+  const { t } = useI18n();
   const videoRef = useRef<HTMLVideoElement>(null);
   const prevStageRef = useRef(0);
 
@@ -123,7 +125,7 @@ export function PiPView({ stage, isRunning, isActive, totalAccumulatedTime, onTo
             whiteSpace: 'nowrap',
           }}
         >
-          {isRunning ? 'Pause' : 'Start'}
+          {isRunning ? t('pause') : t('start')}
         </button>
       </div>
     </div>
@@ -148,6 +150,7 @@ function formatTime(seconds: number): string {
 }
 
 export function MiniPlayer({ stage, isRunning, isActive, totalAccumulatedTime, onTogglePlay, onExpand }: Props) {
+  const { t } = useI18n();
   const videoRef = useRef<HTMLVideoElement>(null);
   const prevStageRef = useRef(0);
 
@@ -281,7 +284,7 @@ export function MiniPlayer({ stage, isRunning, isActive, totalAccumulatedTime, o
             whiteSpace: 'nowrap',
           }}
         >
-          {isRunning ? 'Pause' : 'Start'}
+          {isRunning ? t('pause') : t('start')}
         </button>
       </div>
     </div>

@@ -1,13 +1,14 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import './index.css'
+import './styles/theme.css'
 import App from './App.tsx'
-import { AuthProvider } from './context/AuthContext.tsx'
+import { I18nProvider } from './i18n/I18nContext.tsx'
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <AuthProvider>
+    <I18nProvider>
       <App />
-    </AuthProvider>
+    </I18nProvider>
   </StrictMode>,
 )

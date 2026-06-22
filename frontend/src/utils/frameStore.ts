@@ -1,6 +1,8 @@
 const DB_NAME    = 'lorestead';
-const DB_VERSION = 1;
+const DB_VERSION = 2;
 const STORE_NAME = 'timelapse_frames';
+/** 生成済みタイムラプス動画（履歴）を保存するストア */
+export const TIMELAPSES_STORE = 'timelapses';
 
 export type FrameSource = 'world' | 'screen';
 
@@ -14,7 +16,8 @@ interface FrameRecord {
   source: FrameSource;
 }
 
-function openDB(): Promise<IDBDatabase> {
+/** lorestead DB を開く（frame / timelapse 両ストア共用） */
+export function openDB(): Promise<IDBDatabase> {
   return new Promise((resolve, reject) => {
     const req = indexedDB.open(DB_NAME, DB_VERSION);
     req.onerror = () => reject(req.error);
@@ -24,6 +27,10 @@ function openDB(): Promise<IDBDatabase> {
       if (!db.objectStoreNames.contains(STORE_NAME)) {
         const store = db.createObjectStore(STORE_NAME, { keyPath: 'id', autoIncrement: true });
         store.createIndex('sessionId', 'sessionId', { unique: false });
+      }
+      if (!db.objectStoreNames.contains(TIMELAPSES_STORE)) {
+        const tl = db.createObjectStore(TIMELAPSES_STORE, { keyPath: 'id' });
+        tl.createIndex('createdAt', 'createdAt', { unique: false });
       }
     };
   });
