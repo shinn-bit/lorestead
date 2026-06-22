@@ -9,7 +9,7 @@
 
 ---
 
-![Splash](docs/screenshots/01_splash.png)
+![Splash](frontend/screenshot/01_splash.png)
 
 ---
 
@@ -21,11 +21,11 @@ Loresteadは、集中タイマーと「世界育成」のゲーム体験を融�
 
 | セットアップ | メイン画面 |
 |---|---|
-| ![Setup](docs/screenshots/02_setup.png) | ![Home](docs/screenshots/03_home.png) |
+| ![Setup](frontend/screenshot/02_setup.png) | ![Home](frontend/screenshot/03_home.png) |
 
 | タスクモード |  |
 |---|---|
-| ![Tasks](docs/screenshots/04_tasks.png) | |
+| ![Tasks](frontend/screenshot/04_tasks.png) | |
 
 ## 機能
 
