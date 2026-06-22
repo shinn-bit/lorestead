@@ -1,55 +1,50 @@
 # LORESTEAD
 
-> A focus timer where your work time grows a medieval world.
+> 勉強・作業時間やタスク完了に応じて中世の街が育つ、没入型の生産性タイマーアプリ
 
 ![React](https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=white)
 ![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?logo=typescript&logoColor=white)
-![AWS](https://img.shields.io/badge/AWS-Lambda%20%2F%20DynamoDB%20%2F%20S3-FF9900?logo=amazonaws&logoColor=white)
 ![Vite](https://img.shields.io/badge/Vite-8-646CFF?logo=vite&logoColor=white)
+![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-4-38BDF8?logo=tailwindcss&logoColor=white)
 
 ---
 
-## Overview
+## 概要
 
-Lorestead is a productivity web app that combines the Pomodoro technique with a visual world-growth system. As you accumulate focus hours, an animated medieval town on your screen evolves through 8 distinct phases — from an empty field to a thriving city.
+Loresteadは、集中タイマーと「世界育成」のゲーム体験を融合させたWebアプリです。セッション開始時に成長モードを選び、タイマーを動かすたびに画面いっぱいに広がる中世の街が5段階で進化します。ログイン不要・完全クライアントサイドで動作します。
 
-## Features
+## 機能
 
-- **Pomodoro Timer** — Active sessions (25 / 45 / 60 / 90 min) and Rest sessions (5 / 10 / 15 min) with preset switching
-- **Living World** — Animated medieval town background that evolves through 8 phases based on total accumulated hours (0 → 1 → 3 → 5 → 8 → 12 → 16 → 20 hrs)
-- **Timelapse Recording** — Captures your screen during a session and exports an MP4 timelapse when you end the session
-- **Picture-in-Picture** — Float the timer in a PiP window so you can work in other tabs without losing track
-- **Cloud Sync** — Sign in to save your sessions and progress to AWS; resume from any device
-- **Session History** — Browse past sessions with stage thumbnails and download timelapse videos
+### 3つの成長モード
 
-## Tech Stack
-
-| Layer | Technology |
+| モード | 成長条件 |
 |---|---|
-| Frontend | React 19, TypeScript, Vite, Tailwind CSS |
-| Backend | AWS Lambda (Node.js 20), Amazon DynamoDB, Amazon S3 |
-| Auth | Amazon Cognito |
-| Infrastructure | AWS CDK (TypeScript) |
-| Hosting | Vercel (frontend) |
+| **時間で成長** | 目標時間を設定し、達成度に応じて5段階進化 |
+| **タスクで成長** | ToDoリストを作成し、完了数に応じて進化 |
+| **フリー** | 設定不要。1時間ごとに自動で1段階成長（4時間で完成） |
 
-## Project Structure
+### その他の機能
 
-```
-lorestead/
-├── frontend/        # React app (Vite + Tailwind CSS)
-├── backend/         # Lambda functions (sessions, progress, auth, timelapse)
-└── infrastructure/  # AWS CDK stack
-```
+- **5段階の世界進化** — 中世の街がアニメーション動画で段階的に変化
+- **セットアップウィザード** — 初回起動時のガイドツアーで直感的にモードを選択
+- **タイムラプス生成** — セッション中の作業画面をキャプチャしてMP4として保存・ダウンロード
+- **Picture-in-Picture** — 他のタブで作業しながらタイマーをフローティング表示
+- **Hide UI** — UIを非表示にして世界動画だけを全画面表示
+- **Chronicle（履歴）** — 過去セッションのタイムラプスをローカルに保存・閲覧
+- **日英対応** — EN / JP 切り替え
 
-## Getting Started
+## 技術スタック
 
-### Prerequisites
+| 項目 | 技術 |
+|---|---|
+| フレームワーク | React 19, TypeScript |
+| ビルド | Vite 8 |
+| スタイル | Tailwind CSS 4 |
+| データ保存 | IndexedDB（タイムラプス・フレーム） |
+| ブラウザAPI | MediaRecorder, getDisplayMedia, documentPictureInPicture |
+| ホスティング | Vercel |
 
-- Node.js 20+
-- AWS account (for backend / infrastructure)
-- AWS CLI configured
-
-### Frontend
+## セットアップ
 
 ```bash
 cd frontend
@@ -57,30 +52,14 @@ npm install
 npm run dev
 ```
 
-### Backend
+## 使い方
 
-```bash
-cd backend
-npm install
-npm run build:all
-```
+1. 初回起動時に**言語選択** → **成長モード選択**（セットアップウィザード）
+2. **START** でタイマー開始、街が動き始める
+3. タスクモードの場合は右側のチェックリストをこなすと街が進化
+4. **END SESSION** でセッション終了 → タイムラプス生成 → 履歴に保存
+5. **HISTORY** タブで過去のタイムラプスを閲覧・ダウンロード
 
-### Infrastructure
-
-```bash
-cd infrastructure
-npm install
-npx cdk deploy
-```
-
-## How It Works
-
-1. Hit **START** to begin a focus session.
-2. The medieval town animates in the background while your timer runs.
-3. Accumulated hours across all sessions determine your world's current **Phase** (1–8).
-4. End a session to generate a **timelapse** of your work and save it to history.
-5. Sign in to sync progress across devices and resume sessions from where you left off.
-
-## License
+## ライセンス
 
 MIT
