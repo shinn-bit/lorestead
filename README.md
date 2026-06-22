@@ -2,6 +2,8 @@
 
 > 勉強・作業時間やタスク完了に応じて中世の街が育つ、没入型の生産性タイマーアプリ
 
+[English README is here → README.en.md](./README.en.md)
+
 ![React](https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=white)
 ![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?logo=typescript&logoColor=white)
 ![Vite](https://img.shields.io/badge/Vite-8-646CFF?logo=vite&logoColor=white)
