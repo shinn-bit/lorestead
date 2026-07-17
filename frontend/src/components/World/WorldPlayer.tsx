@@ -1,4 +1,4 @@
-import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { getVideoConfig } from '../../utils/stageCalculator';
 
 interface Props {
@@ -6,14 +6,9 @@ interface Props {
   isActive: boolean;
 }
 
-export interface WorldPlayerHandle {
-  /** 現在表示中のフレームをJPEG Blobで返す */
-  captureFrame(): Promise<Blob | null>;
-}
-
 const FADE_MS = 700;
 
-export const WorldPlayer = forwardRef<WorldPlayerHandle, Props>(function WorldPlayer({ stage, isActive }, ref) {
+export function WorldPlayer({ stage, isActive }: Props) {
   const videoARef = useRef<HTMLVideoElement>(null);
   const videoBRef = useRef<HTMLVideoElement>(null);
   const preloadRef = useRef<HTMLVideoElement>(null);
@@ -27,18 +22,6 @@ export const WorldPlayer = forwardRef<WorldPlayerHandle, Props>(function WorldPl
 
   const prevStageRef = useRef(0);
   const cleanupRef = useRef<(() => void) | null>(null);
-
-  useImperativeHandle(ref, () => ({
-    captureFrame(): Promise<Blob | null> {
-      const front = aIsFrontRef.current ? videoARef.current : videoBRef.current;
-      if (!front || front.readyState < 2) return Promise.resolve(null);
-      const canvas = document.createElement('canvas');
-      canvas.width  = front.videoWidth  || 1080;
-      canvas.height = front.videoHeight || 1080;
-      canvas.getContext('2d')!.drawImage(front, 0, 0, canvas.width, canvas.height);
-      return new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', 0.85));
-    },
-  }));
 
   // ---------- 初期化（最初からループ再生） ----------
   useEffect(() => {
@@ -156,4 +139,4 @@ export const WorldPlayer = forwardRef<WorldPlayerHandle, Props>(function WorldPl
       <video ref={preloadRef} muted playsInline preload="auto" className="hidden" />
     </div>
   );
-});
+}

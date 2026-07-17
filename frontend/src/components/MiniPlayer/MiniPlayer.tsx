@@ -1,7 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { useDraggable } from '../../hooks/useDraggable';
 import { getVideoConfig, MAX_STAGE } from '../../utils/stageCalculator';
-import { useI18n } from '../../i18n/I18nContext';
 
 function getLoopSrc(stage: number): string {
   const config = getVideoConfig(stage);
@@ -11,15 +10,11 @@ function getLoopSrc(stage: number): string {
 // ── PiP window content (no dragging — OS handles window dragging) ──────────
 interface PiPProps {
   stage: number;
-  isRunning: boolean;
   isActive: boolean;
-  totalAccumulatedTime: number;
-  onTogglePlay: () => void;
   onClose: () => void;
 }
 
-export function PiPView({ stage, isRunning, isActive, totalAccumulatedTime, onTogglePlay, onClose }: PiPProps) {
-  const { t } = useI18n();
+export function PiPView({ stage, isActive, onClose }: PiPProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const prevStageRef = useRef(0);
 
@@ -50,7 +45,7 @@ export function PiPView({ stage, isRunning, isActive, totalAccumulatedTime, onTo
 
   return (
     <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', background: '#15171a' }}>
-      {/* Video fills top portion */}
+      {/* Video fills the window */}
       <div style={{ position: 'relative', flex: 1, background: '#000', minHeight: 0 }}>
         <video
           ref={videoRef}
@@ -89,68 +84,17 @@ export function PiPView({ stage, isRunning, isActive, totalAccumulatedTime, onTo
           ✕
         </button>
       </div>
-
-      {/* Controls row */}
-      <div style={{
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        padding: '10px 14px',
-        gap: 10,
-        flexShrink: 0,
-      }}>
-        <span style={{
-          fontFamily: "'Cinzel', serif",
-          fontSize: 18,
-          fontWeight: 300,
-          color: '#f5e6d3',
-          letterSpacing: '0.05em',
-          lineHeight: 1,
-        }}>
-          {formatTime(totalAccumulatedTime)}
-        </span>
-        <button
-          onClick={onTogglePlay}
-          style={{
-            background: 'rgba(212,175,55,0.15)',
-            border: '1px solid rgba(212,175,55,0.4)',
-            color: '#f5e6d3',
-            fontFamily: "'Cinzel', serif",
-            fontSize: 10,
-            letterSpacing: '0.2em',
-            textTransform: 'uppercase',
-            padding: '6px 14px',
-            borderRadius: 9999,
-            cursor: 'pointer',
-            whiteSpace: 'nowrap',
-          }}
-        >
-          {isRunning ? t('pause') : t('start')}
-        </button>
-      </div>
     </div>
   );
 }
 
 interface Props {
   stage: number;
-  isRunning: boolean;
   isActive: boolean;
-  totalAccumulatedTime: number; // seconds
-  onTogglePlay: () => void;
   onExpand: () => void;
 }
 
-function formatTime(seconds: number): string {
-  const s = Math.floor(seconds);
-  const h = Math.floor(s / 3600);
-  const m = Math.floor((s % 3600) / 60);
-  const sec = s % 60;
-  return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:${sec.toString().padStart(2, '0')}`;
-}
-
-export function MiniPlayer({ stage, isRunning, isActive, totalAccumulatedTime, onTogglePlay, onExpand }: Props) {
-  const { t } = useI18n();
+export function MiniPlayer({ stage, isActive, onExpand }: Props) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const prevStageRef = useRef(0);
 
@@ -244,47 +188,6 @@ export function MiniPlayer({ stage, isRunning, isActive, totalAccumulatedTime, o
           }}
         >
           ⤢
-        </button>
-      </div>
-
-      {/* コントロールエリア */}
-      <div style={{
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        padding: '10px 14px',
-        gap: 10,
-      }}>
-        {/* タイマー */}
-        <span style={{
-          fontFamily: "'Cinzel', serif",
-          fontSize: 18,
-          fontWeight: 300,
-          color: '#f5e6d3',
-          letterSpacing: '0.05em',
-          lineHeight: 1,
-        }}>
-          {formatTime(totalAccumulatedTime)}
-        </span>
-
-        {/* 再生/停止ボタン */}
-        <button
-          onClick={onTogglePlay}
-          style={{
-            background: 'rgba(212,175,55,0.15)',
-            border: '1px solid rgba(212,175,55,0.4)',
-            color: '#f5e6d3',
-            fontFamily: "'Cinzel', serif",
-            fontSize: 10,
-            letterSpacing: '0.2em',
-            textTransform: 'uppercase',
-            padding: '6px 14px',
-            borderRadius: 9999,
-            cursor: 'pointer',
-            whiteSpace: 'nowrap',
-          }}
-        >
-          {isRunning ? t('pause') : t('start')}
         </button>
       </div>
     </div>

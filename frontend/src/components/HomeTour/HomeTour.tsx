@@ -96,10 +96,6 @@ export function HomeTour({ open, onClose, subscreenRef, hideBtnRef }: Props) {
           <span className="htp-label">{t('home_tour_preview')}</span>
           <div className="htp-mock">
             <div className="htp-video" />
-            <div className="htp-row">
-              <span className="htp-time">00:42:10</span>
-              <span className="htp-btn">{t('pause')}</span>
-            </div>
           </div>
         </div>
       )}

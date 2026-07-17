@@ -2,31 +2,28 @@ import { createContext, useContext, useState, useEffect, useCallback, type React
 import { dict, type Lang, type I18nKey } from './dict';
 
 const LS_KEY = 'lorestead_lang';
-const LS_CHOSEN_KEY = 'lorestead_lang_chosen';
 
-function loadLang(): Lang {
+/** ブラウザの言語設定から初期値を推定する（日本語系ロケールのみ 'ja'、それ以外は 'en'） */
+function detectLang(): Lang {
   try {
-    return localStorage.getItem(LS_KEY) === 'ja' ? 'ja' : 'en';
+    const nav = navigator.language ?? (navigator.languages?.[0] ?? '');
+    return nav.toLowerCase().startsWith('ja') ? 'ja' : 'en';
   } catch {
     return 'en';
   }
 }
 
-function loadLangChosen(): boolean {
+function loadLang(): Lang {
   try {
-    if (localStorage.getItem(LS_CHOSEN_KEY) === '1') return true;
-    // 既存ユーザー：既に言語設定が保存されていれば選択済みとみなし、再表示しない
-    return localStorage.getItem(LS_KEY) !== null;
-  } catch {
-    return false;
-  }
+    const stored = localStorage.getItem(LS_KEY);
+    if (stored === 'ja' || stored === 'en') return stored;
+  } catch { /* ignore */ }
+  return detectLang();
 }
 
 interface I18nValue {
   lang: Lang;
   setLang: (l: Lang) => void;
-  langChosen: boolean;
-  chooseLang: (l: Lang) => void;
   t: (key: I18nKey) => string;
 }
 
@@ -34,7 +31,6 @@ const I18nContext = createContext<I18nValue | null>(null);
 
 export function I18nProvider({ children }: { children: ReactNode }) {
   const [lang, setLangState] = useState<Lang>(() => loadLang());
-  const [langChosen, setLangChosen] = useState<boolean>(() => loadLangChosen());
 
   // body.lang-ja で日本語フォントへ切り替え（テーマCSS側で参照）
   useEffect(() => {
@@ -47,13 +43,6 @@ export function I18nProvider({ children }: { children: ReactNode }) {
     setLangState(l);
   }, []);
 
-  // 初回起動時の言語選択画面で呼ばれる：言語を確定し、以後は選択画面を表示しない
-  const chooseLang = useCallback((l: Lang) => {
-    setLang(l);
-    try { localStorage.setItem(LS_CHOSEN_KEY, '1'); } catch { /* ignore */ }
-    setLangChosen(true);
-  }, [setLang]);
-
   const t = useCallback(
     (key: I18nKey) => {
       const entry = dict[key];
@@ -63,7 +52,7 @@ export function I18nProvider({ children }: { children: ReactNode }) {
     [lang],
   );
 
-  return <I18nContext.Provider value={{ lang, setLang, langChosen, chooseLang, t }}>{children}</I18nContext.Provider>;
+  return <I18nContext.Provider value={{ lang, setLang, t }}>{children}</I18nContext.Provider>;
 }
 
 export function useI18n(): I18nValue {

@@ -1,32 +1,24 @@
 import { useState, useRef, useEffect, useLayoutEffect } from 'react';
 import { useI18n } from '../i18n/I18nContext';
 import { LangToggle } from '../components/LangToggle';
+import { getGoal, setGoal } from '../utils/goalStore';
 import type { View } from '../App';
 import type { I18nKey } from '../i18n/dict';
 
 interface Props {
-  onStartTime: (targetMinutes: number) => void;
   onStartTasks: (labels: string[]) => void;
-  onStartFree: () => void;
   onNavigate: (view: View) => void;
 }
 
-type WizardView = 'choose' | 'time' | 'task';
+type WizardView = 'goal' | 'task';
 
-const HOUR_PRESETS = [1, 2, 4, 8];
 const SETUP_SEEN_KEY = 'lorestead_setup_seen';
 
-const HomeIcon = () => (
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" /><polyline points="9 22 9 12 15 12 15 22" /></svg>
-);
 const ScrollIcon = () => (
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 3v5h5" /><path d="M3.05 13A9 9 0 1 0 6 5.3L3 8" /><polyline points="12 7 12 12 15 15" /></svg>
 );
-const ClockIcon = () => (
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="8.5" /><polyline points="12 7 12 12 16 14" /></svg>
-);
-const ListIcon = () => (
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><polyline points="3.5 7 5.5 9 9 5.5" /><polyline points="3.5 17 5.5 19 9 15.5" /><line x1="12.5" y1="7" x2="20.5" y2="7" /><line x1="12.5" y1="17" x2="20.5" y2="17" /></svg>
+const HomeIcon = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" /><polyline points="9 22 9 12 15 12 15 22" /></svg>
 );
 
 function loadSetupSeen(): boolean {
@@ -35,48 +27,53 @@ function loadSetupSeen(): boolean {
 
 interface Geom { top: number; left: number; width: number; height: number; popTop: boolean; }
 
-export function SetupScreen({ onStartTime, onStartTasks, onStartFree, onNavigate }: Props) {
+export function SetupScreen({ onStartTasks, onNavigate }: Props) {
   const { t, lang } = useI18n();
 
-  const [view, setView] = useState<WizardView>('choose');
-  const [hours, setHours] = useState<number>(2);
+  const [view, setView] = useState<WizardView>(() => (getGoal() ? 'task' : 'goal'));
+  const [goalDateInput, setGoalDateInput] = useState(() => getGoal()?.date ?? '');
+  const [goalLabelInput, setGoalLabelInput] = useState(() => getGoal()?.label ?? '');
   const [tasks, setTasks] = useState<string[]>(['', '', '']);
 
-  // guided tour
-  const [tourOpen, setTourOpen] = useState<boolean>(() => !loadSetupSeen());
+  // guided tour（タスク入力に到達した時にだけ開く）
+  const [tourOpen, setTourOpen] = useState(false);
   const [tourIdx, setTourIdx] = useState(0);
   const [geom, setGeom] = useState<Geom>({ top: 0, left: 0, width: 0, height: 0, popTop: false });
 
-  const pathsRef = useRef<HTMLDivElement>(null);
-  const presetsRef = useRef<HTMLDivElement>(null);
   const tasklistRef = useRef<HTMLDivElement>(null);
-  const beginTimeRef = useRef<HTMLButtonElement>(null);
-  const justStartRef = useRef<HTMLDivElement>(null);
+  const beginRef = useRef<HTMLButtonElement>(null);
 
-  const TOUR: { view: WizardView; ref: React.RefObject<HTMLElement | null>; key: I18nKey }[] = [
-    { view: 'choose', ref: pathsRef, key: 'tour_1' },
-    { view: 'time', ref: presetsRef, key: 'tour_2' },
-    { view: 'task', ref: tasklistRef, key: 'tour_task' },
-    { view: 'time', ref: beginTimeRef, key: 'tour_3' },
-    { view: 'choose', ref: justStartRef, key: 'tour_4' },
+  const TOUR: { ref: React.RefObject<HTMLElement | null>; key: I18nKey }[] = [
+    { ref: tasklistRef, key: 'tour_task' },
+    { ref: beginRef, key: 'tour_begin' },
   ];
-
-  // tour 表示中は対象ステップの view を強制表示する
-  const activeView: WizardView = tourOpen ? TOUR[tourIdx].view : view;
 
   const nonEmptyTasks = tasks.map((s) => s.trim()).filter((s) => s.length > 0);
   function updateTask(i: number, v: string) { setTasks((p) => p.map((x, idx) => (idx === i ? v : x))); }
   function addTask() { setTasks((p) => [...p, '']); }
   function removeTask(i: number) { setTasks((p) => (p.length <= 1 ? p : p.filter((_, idx) => idx !== i))); }
 
-  function beginTime() { onStartTime(Math.round((hours > 0 ? hours : 1) * 60)); }
   function beginTasks() { if (nonEmptyTasks.length > 0) onStartTasks(nonEmptyTasks); }
 
-  // ── tour controls ──
+  function continueFromGoal() {
+    if (goalDateInput) setGoal(goalDateInput, goalLabelInput);
+    setView('task');
+  }
+
+  function openGoalEditor() {
+    setGoalDateInput(getGoal()?.date ?? '');
+    setGoalLabelInput(getGoal()?.label ?? '');
+    setView('goal');
+  }
+
+  // タスク入力画面に着いたら、初回だけツアーを開く
+  useEffect(() => {
+    if (view === 'task' && !loadSetupSeen()) { setTourIdx(0); setTourOpen(true); }
+  }, [view]);
+
   function openTour() { setTourIdx(0); setTourOpen(true); }
   function closeTour() {
     setTourOpen(false);
-    setView('choose');
     try { localStorage.setItem(SETUP_SEEN_KEY, '1'); } catch { /* ignore */ }
   }
   function nextTour() { setTourIdx((i) => { if (i < TOUR.length - 1) return i + 1; closeTour(); return i; }); }
@@ -100,7 +97,7 @@ export function SetupScreen({ onStartTime, onStartTasks, onStartFree, onNavigate
     window.addEventListener('resize', measure);
     return () => { cancelAnimationFrame(id); window.removeEventListener('resize', measure); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [tourOpen, tourIdx, lang, activeView]);
+  }, [tourOpen, tourIdx, lang]);
 
   // キーボード操作
   useEffect(() => {
@@ -115,10 +112,6 @@ export function SetupScreen({ onStartTime, onStartTasks, onStartFree, onNavigate
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tourOpen, tourIdx]);
 
-  const hoursLabel = hours > 0 ? hours : 1;
-  const stepActive = (n: number) => (activeView === 'choose' ? 1 : 2) >= n;
-  const viewCls = (v: WizardView) => `view ${activeView === v ? 'active' : ''} ${tourOpen ? 'no-anim' : ''}`;
-
   const bottom = geom.top + geom.height;
   const right = geom.left + geom.width;
 
@@ -129,7 +122,8 @@ export function SetupScreen({ onStartTime, onStartTasks, onStartFree, onNavigate
         <div className="wordmark">LORE<b>STEAD</b></div>
         <div className="topbar-right">
           <LangToggle />
-          <button className="howlink" onClick={openTour}>{t('how_it_works')}</button>
+          {view === 'task' && <button className="howlink" onClick={openGoalEditor}>{t('goal_edit_link')}</button>}
+          {view === 'task' && <button className="howlink" onClick={openTour}>{t('how_it_works')}</button>}
           <nav className="nav">
             <button className="active"><HomeIcon /> Home</button>
             <button onClick={() => onNavigate('history')}><ScrollIcon /> Chronicle</button>
@@ -142,94 +136,53 @@ export function SetupScreen({ onStartTime, onStartTasks, onStartFree, onNavigate
         <span className="corner tl" /><span className="corner tr" />
         <span className="corner bl" /><span className="corner br" />
 
-        <div className="steps">
-          <span className={`dot ${stepActive(1) ? 'on' : ''}`} />
-          <span className={`dot ${stepActive(2) ? 'on' : ''}`} />
-        </div>
+        {/* VIEW · GOAL DATE (optional, first-run) */}
+        {view === 'goal' && (
+          <section className="view active">
+            <div className="eyebrow">{t('goal_step_eyebrow')}</div>
+            <h1>{t('goal_step_h')}</h1>
+            <p className="sub">{t('goal_step_p')}</p>
+            <div className="divider"><span className="line" /><span className="mark">✦</span><span className="line r" /></div>
 
-        {/* VIEW 1 · CHOOSE */}
-        <section className={viewCls('choose')}>
-          <div className="eyebrow">{t('setup_eyebrow')}</div>
-          <h1>{t('setup_h1')}</h1>
-          <p className="sub">{t('choose_sub')}</p>
-          <div className="divider"><span className="line" /><span className="mark">✦</span><span className="line r" /></div>
+            <div className="custom-row">
+              <label>{t('goal_input_label')}</label>
+              <input type="date" value={goalDateInput} onChange={(e) => setGoalDateInput(e.target.value)} />
+            </div>
+            <div className="custom-row">
+              <label>{t('goal_label_input')}</label>
+              <input
+                type="text"
+                value={goalLabelInput}
+                placeholder={t('goal_label_ph')}
+                onChange={(e) => setGoalLabelInput(e.target.value)}
+                style={{ textAlign: 'left' }}
+              />
+            </div>
+            <button className="begin" onClick={continueFromGoal}>{t('goal_continue')}</button>
+          </section>
+        )}
 
-          <div className="paths" ref={pathsRef}>
-            <button className="path" onClick={() => setView('time')}>
-              <span className="path-mark"><ClockIcon /></span>
-              <span className="path-body">
-                <span className="path-h">{t('way_time_h')}</span>
-                <span className="path-p">{t('way_time_p')}</span>
-              </span>
-              <span className="arrow">›</span>
-            </button>
-            <button className="path" onClick={() => setView('task')}>
-              <span className="path-mark"><ListIcon /></span>
-              <span className="path-body">
-                <span className="path-h">{t('way_task_h')}</span>
-                <span className="path-p">{t('way_task_p')}</span>
-              </span>
-              <span className="arrow">›</span>
-            </button>
-          </div>
+        {/* VIEW · TASKS */}
+        {view === 'task' && (
+          <section className="view active">
+            <div className="eyebrow">{t('task_step_eyebrow')}</div>
+            <h1>{t('task_step_h')}</h1>
+            <p className="sub">{t('task_hint')}</p>
+            <div className="divider"><span className="line" /><span className="mark">✦</span><span className="line r" /></div>
 
-          <div className="juststart" ref={justStartRef}>
-            <button onClick={onStartFree}>{t('just_start')}</button>
-            <span className="note">{t('just_start_note')}</span>
-          </div>
-        </section>
-
-        {/* VIEW 2a · TIME */}
-        <section className={viewCls('time')}>
-          <button className="backlink" onClick={() => setView('choose')}><span className="chev">‹</span> {t('nav_back')}</button>
-          <div className="eyebrow">{t('time_step_eyebrow')}</div>
-          <h1>{t('time_step_h')}</h1>
-          <p className="sub">{t('time_hint')}</p>
-          <div className="divider"><span className="line" /><span className="mark">✦</span><span className="line r" /></div>
-
-          <div className="presets" ref={presetsRef}>
-            {HOUR_PRESETS.map((h) => (
-              <div key={h} className={`preset ${hours === h ? 'active' : ''}`} onClick={() => setHours(h)}>{h}h</div>
-            ))}
-          </div>
-          <div className="custom-row">
-            <label>{t('custom')}</label>
-            <input type="number" value={hours} min={0.5} max={24} step={0.5} onChange={(e) => setHours(Number(e.target.value))} />
-            <span className="unit">{t('hours')}</span>
-          </div>
-          <button className="begin" ref={beginTimeRef} onClick={beginTime}>{t('begin')} · {hoursLabel}h</button>
-
-          <div className="juststart">
-            <button onClick={onStartFree}>{t('just_start')}</button>
-            <span className="note">{t('just_start_note')}</span>
-          </div>
-        </section>
-
-        {/* VIEW 2b · TASKS */}
-        <section className={viewCls('task')}>
-          <button className="backlink" onClick={() => setView('choose')}><span className="chev">‹</span> {t('nav_back')}</button>
-          <div className="eyebrow">{t('task_step_eyebrow')}</div>
-          <h1>{t('task_step_h')}</h1>
-          <p className="sub">{t('task_hint')}</p>
-          <div className="divider"><span className="line" /><span className="mark">✦</span><span className="line r" /></div>
-
-          <div className="tasklist" ref={tasklistRef}>
-            {tasks.map((task, i) => (
-              <div key={i} className="task-row">
-                <span className="num">{i + 1}</span>
-                <input type="text" value={task} placeholder={`${t('task_ph')} ${i + 1}`} onChange={(e) => updateTask(i, e.target.value)} />
-                <button className="rm" onClick={() => removeTask(i)} disabled={tasks.length <= 1}>−</button>
-              </div>
-            ))}
-          </div>
-          <button className="addtask" onClick={addTask}>{t('add_task')}</button>
-          <button className="begin" onClick={beginTasks} disabled={nonEmptyTasks.length === 0}>{t('begin')} · {t('tasks_word')}</button>
-
-          <div className="juststart">
-            <button onClick={onStartFree}>{t('just_start')}</button>
-            <span className="note">{t('just_start_note')}</span>
-          </div>
-        </section>
+            <div className="tasklist" ref={tasklistRef}>
+              {tasks.map((task, i) => (
+                <div key={i} className="task-row">
+                  <span className="num">{i + 1}</span>
+                  <input type="text" value={task} placeholder={`${t('task_ph')} ${i + 1}`} onChange={(e) => updateTask(i, e.target.value)} />
+                  <button className="rm" onClick={() => removeTask(i)} disabled={tasks.length <= 1}>−</button>
+                </div>
+              ))}
+            </div>
+            <button className="addtask" onClick={addTask}>{t('add_task')}</button>
+            <button className="begin" ref={beginRef} onClick={beginTasks} disabled={nonEmptyTasks.length === 0}>{t('begin')} · {t('tasks_word')}</button>
+          </section>
+        )}
       </main>
 
       {/* Guided tour */}
