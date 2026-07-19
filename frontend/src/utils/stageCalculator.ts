@@ -5,11 +5,15 @@ export interface VideoConfig {
   loopSrc?: string;
 }
 
+/**
+ * サブ画面・ミニプレイヤーなど、複数イベント動画を抽選せず常時ループでよい場面向けの
+ * シンプルな1本（そのステージの「normal」クリップ）。イベント抽選・3部構成の再生は
+ * メインのWorldPlayerが utils/stageEvents.ts を使って行う。
+ */
 export function getVideoConfig(stage: number): VideoConfig {
   if (stage < 1 || stage > MAX_STAGE) return {};
-  const base = '/assets/worlds/town';
   const pad = String(stage).padStart(2, '0');
-  return { loopSrc: `${base}/stage_${pad}.mp4` };
+  return { loopSrc: `/assets/worlds/town/stage_${pad}/stage_${pad}_normal.mp4` };
 }
 
 /**
