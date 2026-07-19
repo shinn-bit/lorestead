@@ -40,12 +40,26 @@ function set(intro: string, loop: string | string[], outro: string): SetClip {
   return { kind: 'set', intro, loop: Array.isArray(loop) ? loop : [loop], outro };
 }
 
-/** normal の重みを「他イベント数」に合わせ、常に50%以上の出現率になるようにする */
-function buildEvents(normal: EventClip, others: { id: string; clip: EventClip }[]): StageEvent[] {
-  const normalWeight = Math.max(others.length, 1);
+/** 日常の一コマ（coffee/book/hands）は高頻度枠、特別な来客（dog/cat/talk/owl）は低頻度枠 */
+const HIGH_TIER_WEIGHT = 2;
+const LOW_TIER_WEIGHT = 1;
+
+/**
+ * normal の出現率を指定した比率（既定60%、stage_05のみ75%）に固定しつつ、
+ * 他イベントは重み比のまま normal 以外の枠（40% or 25%）を分け合う。
+ */
+function buildEvents(
+  normal: EventClip,
+  others: { id: string; clip: EventClip; weight: number }[],
+  normalRatio = 0.6,
+): StageEvent[] {
+  const othersWeightSum = others.reduce((s, o) => s + o.weight, 0);
+  const normalWeight = othersWeightSum > 0
+    ? (normalRatio / (1 - normalRatio)) * othersWeightSum
+    : 1;
   return [
     { id: 'normal', weight: normalWeight, clip: normal },
-    ...others.map((o) => ({ id: o.id, weight: 1, clip: o.clip })),
+    ...others.map((o) => ({ id: o.id, weight: o.weight, clip: o.clip })),
   ];
 }
 
@@ -56,28 +70,29 @@ export function getStageEvents(stage: number): StageEvent[] {
   switch (stage) {
     case 1:
       return buildEvents(single(p('stage_01_normal.mp4')), [
-        { id: 'book', clip: single(p('stage_01_book.mp4')) },
-        { id: 'coffee', clip: single(p('stage_01_coffee.mp4')) },
-        { id: 'hands', clip: single(p('stage_01_hands.mp4')) },
+        { id: 'book', weight: HIGH_TIER_WEIGHT, clip: single(p('stage_01_book.mp4')) },
+        { id: 'coffee', weight: HIGH_TIER_WEIGHT, clip: single(p('stage_01_coffee.mp4')) },
+        { id: 'hands', weight: HIGH_TIER_WEIGHT, clip: single(p('stage_01_hands.mp4')) },
       ]);
     case 2:
       return buildEvents(single(p('stage_02_normal.mp4')), [
-        { id: 'book', clip: single(p('stage_02_book.mp4')) },
-        { id: 'coffee', clip: single(p('stage_02_coffee.mp4')) },
-        { id: 'dog', clip: single(p('stage_02_dog.mp4')) },
+        { id: 'book', weight: HIGH_TIER_WEIGHT, clip: single(p('stage_02_book.mp4')) },
+        { id: 'coffee', weight: HIGH_TIER_WEIGHT, clip: single(p('stage_02_coffee.mp4')) },
+        { id: 'dog', weight: LOW_TIER_WEIGHT, clip: single(p('stage_02_dog.mp4')) },
       ]);
     case 3:
       return buildEvents(single(p('stage_03_normal.mp4')), [
-        { id: 'book', clip: single(p('stage_03_book.mp4')) },
-        { id: 'coffee', clip: single(p('stage_03_coffee.mp4')) },
-        { id: 'cat', clip: set(p('stage_03_cat-1.mp4'), p('stage_03_cat-2.mp4'), p('stage_03_cat-3.mp4')) },
+        { id: 'book', weight: HIGH_TIER_WEIGHT, clip: single(p('stage_03_book.mp4')) },
+        { id: 'coffee', weight: HIGH_TIER_WEIGHT, clip: single(p('stage_03_coffee.mp4')) },
+        { id: 'cat', weight: LOW_TIER_WEIGHT, clip: set(p('stage_03_cat-1.mp4'), p('stage_03_cat-2.mp4'), p('stage_03_cat-3.mp4')) },
       ]);
     case 4:
       return buildEvents(single(p('stage_04_normal.mp4')), [
-        { id: 'coffee', clip: single(p('stage_04_coffee.mp4')) },
-        { id: 'hands', clip: single(p('stage_04_hands.mp4')) },
+        { id: 'coffee', weight: HIGH_TIER_WEIGHT, clip: single(p('stage_04_coffee.mp4')) },
+        { id: 'hands', weight: HIGH_TIER_WEIGHT, clip: single(p('stage_04_hands.mp4')) },
         {
           id: 'talk',
+          weight: LOW_TIER_WEIGHT,
           clip: set(
             p('stage_04_talk-1.mp4'),
             [p('stage_04_talk-2-1.mp4'), p('stage_04_talk-2-2.mp4')],
@@ -87,9 +102,9 @@ export function getStageEvents(stage: number): StageEvent[] {
       ]);
     case 5:
       return buildEvents(single(p('stage_05_normal.mp4')), [
-        { id: 'coffee', clip: single(p('stage_05_coffee.mp4')) },
-        { id: 'owl', clip: set(p('stage_05_owl-1.mp4'), p('stage_05_owl-2.mp4'), p('stage_05_owl-3.mp4')) },
-      ]);
+        { id: 'coffee', weight: HIGH_TIER_WEIGHT, clip: single(p('stage_05_coffee.mp4')) },
+        { id: 'owl', weight: LOW_TIER_WEIGHT, clip: set(p('stage_05_owl-1.mp4'), p('stage_05_owl-2.mp4'), p('stage_05_owl-3.mp4')) },
+      ], 0.75);
     default:
       return [];
   }
