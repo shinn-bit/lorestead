@@ -40,8 +40,8 @@ function set(intro: string, loop: string | string[], outro: string): SetClip {
   return { kind: 'set', intro, loop: Array.isArray(loop) ? loop : [loop], outro };
 }
 
-/** 日常の一コマ（coffee/book/hands）は高頻度枠、特別な来客（dog/cat/talk/owl）は低頻度枠 */
-const HIGH_TIER_WEIGHT = 2;
+/** 日常の一コマ（coffee/book/hands）は高頻度枠、特別な来客（dog/cat/talk/owl）は低頻度枠（15:1でごく稀に出現） */
+const HIGH_TIER_WEIGHT = 15;
 const LOW_TIER_WEIGHT = 1;
 
 /**
