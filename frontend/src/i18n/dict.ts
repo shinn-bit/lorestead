@@ -28,6 +28,8 @@ export const dict = {
   home_tour_1:     { en: 'Tap <b>Sub Screen</b> to shrink the world down to a small floating window — perfect for keeping it visible while you work elsewhere.', ja: '<b>サブ画面</b>をタップすると、世界を小さなウィンドウとして表示できます。他の作業をしながらでも見ていられます。' },
   home_tour_2:     { en: 'Tap <b>Hide UI</b> to clear away the title and buttons, leaving just the looping world. Click anywhere on the screen to bring everything back.', ja: '<b>表示を隠す</b>をタップすると、タイトルやボタンなどが消えて、ループ動画だけが表示されます。画面のどこかをクリックすると元の表示に戻ります。' },
   home_tour_preview: { en: 'This is how the sub screen looks', ja: 'サブ画面のイメージはこちら' },
+  home_tour_m1:    { en: 'Tap <b>Tasks</b> to open today’s list. Every task you finish builds the town — clear them all and it stands complete.', ja: '<b>タスク</b>をタップすると今日の一覧が開きます。終えるたびに街の建設が進み、すべて片づけると完成します。' },
+  home_tour_m2:    { en: 'The menu holds <b>Hide UI</b>, language, and your chronicle of past days.', ja: 'メニューには<b>表示を隠す</b>・言語切替・これまでの記録があります。' },
 
   /* ── Setup · goal date (optional first-run step, editable anytime) ── */
   how_it_works:    { en: 'How it works', ja: '使い方' },
@@ -55,6 +57,7 @@ export const dict = {
   task_ph:           { en: 'Task', ja: 'タスク' },
   begin:             { en: 'Begin', ja: 'はじめる' },
   tasks_word:        { en: 'Tasks', ja: 'タスク' },
+  menu_label:        { en: 'Menu', ja: 'メニュー' },
 
   /* ── Setup · guided tour ── */
   tour_skip:       { en: 'Skip', ja: 'スキップ' },

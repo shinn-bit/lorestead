@@ -23,6 +23,9 @@ const EyeOffIcon = () => (
 const ClockIcon = () => (
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="8.5" /><polyline points="12 7 12 12 16 14" /></svg>
 );
+const MenuIcon = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><line x1="4" y1="7" x2="20" y2="7" /><line x1="4" y1="12" x2="20" y2="12" /><line x1="4" y1="17" x2="20" y2="17" /></svg>
+);
 
 interface Props {
   onNavigate: (view: View) => void;
@@ -40,8 +43,12 @@ export function MainPage({ onNavigate }: Props) {
   const [showClock, setShowClock]                   = useState(false);
   const [homeTourOpen, setHomeTourOpen]             = useState<boolean>(() => !loadHomeTourSeen());
   const [studiedDays, setStudiedDays]               = useState(0);
+  const [mobileSheetOpen, setMobileSheetOpen]       = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen]         = useState(false);
   const subscreenBtnRef                             = useRef<HTMLButtonElement>(null);
   const hideBtnRef                                  = useRef<HTMLButtonElement>(null);
+  const mobileHandleRef                             = useRef<HTMLButtonElement>(null);
+  const mobileMenuBtnRef                            = useRef<HTMLButtonElement>(null);
   const { pipWindow, isSupported: isPipSupported, open: openPip, close: closePip, isOpen: isPipOpen } = usePictureInPicture(280, 210);
 
   const effectiveIsActive = isPipOpen || isActive;
@@ -68,6 +75,13 @@ export function MainPage({ onNavigate }: Props) {
   const overallProgress = getOverallProgress(config) * 100;
   const doneCount = config.tasks.filter((t) => t.done).length;
   const totalCount = config.tasks.length;
+
+  const goalPrefix = goal?.label ? `${goal.label} · ` : '';
+  const goalText =
+    goalDaysLeft === null ? t('goal_none_label')
+    : goalDaysLeft > 0    ? `${goalPrefix}${goalDaysLeft} ${t('goal_days_left_suffix')}`
+    : goalDaysLeft === 0  ? `${goalPrefix}${t('goal_today_label')}`
+    :                       `${goalPrefix}${t('goal_overdue_label')}`;
 
   async function handleSubScreen() {
     if (isPipOpen) { closePip(); return; }
@@ -131,6 +145,68 @@ export function MainPage({ onNavigate }: Props) {
       <div className="world-glow" />
       <div className="world-base" />
 
+      {/* ── Mobile compact chrome (narrow screens only) ── */}
+      <div className="mobile-bar">
+        <button ref={mobileMenuBtnRef} className="mobile-icon-btn" onClick={() => setMobileMenuOpen((v) => !v)} aria-label={t('menu_label')}>
+          <MenuIcon />
+        </button>
+        <span className="mobile-brand">LORESTEAD</span>
+        <span className="mobile-bar-spacer" />
+      </div>
+
+      {mobileMenuOpen && (
+        <>
+          <div className="mobile-menu-backdrop" onClick={() => setMobileMenuOpen(false)} />
+          <div className="mobile-menu-panel">
+            <LangToggle />
+            <button className="mobile-menu-item" onClick={() => { setMobileMenuOpen(false); setUiHidden(true); }}>{t('hide_ui')}</button>
+            <button className="mobile-menu-item" onClick={() => { setHomeTourOpen(true); setMobileMenuOpen(false); }}>{t('how_to_use')}</button>
+            <button className="mobile-menu-item" onClick={() => { setMobileMenuOpen(false); onNavigate('history'); }}>HISTORY</button>
+          </div>
+        </>
+      )}
+
+      {/* ── Mobile: goal line + bottom-sheet handle ── */}
+      <div className="mobile-foot">
+        <div className="mobile-goal">{goalText}</div>
+        <button ref={mobileHandleRef} className="mobile-handle" onClick={() => setMobileSheetOpen(true)}>
+          <span className="mobile-handle-rule" />
+          <span className="mobile-handle-label">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 15 12 9 18 15" /></svg>
+            {t('tasks_word')} {doneCount} / {totalCount}
+          </span>
+          <span className="mobile-handle-rule" />
+        </button>
+      </div>
+
+      {mobileSheetOpen && (
+        <>
+          <div className="mobile-sheet-backdrop" onClick={() => setMobileSheetOpen(false)} />
+          <div className="mobile-sheet">
+            <button className="mobile-sheet-grip" onClick={() => setMobileSheetOpen(false)} aria-label="Close" />
+            <div className="ledger-head">
+              <span>{t('tasks_word')}</span>
+              <span className="ledger-count">{doneCount} / {totalCount}</span>
+            </div>
+            <div className="ledger-rows custom-scrollbar">
+              {config.tasks.map((task) => (
+                <button
+                  key={task.id}
+                  className={`ledger-row ${task.done ? 'done' : ''}`}
+                  onClick={() => toggleTask(task.id)}
+                >
+                  <span className="ledger-mark" />
+                  <span className="ledger-label">{task.label}</span>
+                </button>
+              ))}
+            </div>
+            <button className="btn-endday mobile-sheet-endday" onClick={() => { setMobileSheetOpen(false); setShowEndDay(true); }}>
+              {t('end_session')}
+            </button>
+          </div>
+        </>
+      )}
+
       {/* ── Title ── */}
       <div className="title"><h1>LORESTEAD</h1></div>
 
@@ -155,12 +231,7 @@ export function MainPage({ onNavigate }: Props) {
         <div className="progress"><div className="progress-fill" style={{ width: `${overallProgress}%` }} /></div>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-          <div className="goal-line">
-            {goalDaysLeft === null && t('goal_none_label')}
-            {goalDaysLeft !== null && goal && goalDaysLeft > 0 && `${goal.label ? `${goal.label} · ` : ''}${goalDaysLeft} ${t('goal_days_left_suffix')}`}
-            {goalDaysLeft !== null && goal && goalDaysLeft === 0 && `${goal.label ? `${goal.label} · ` : ''}${t('goal_today_label')}`}
-            {goalDaysLeft !== null && goal && goalDaysLeft < 0 && `${goal.label ? `${goal.label} · ` : ''}${t('goal_overdue_label')}`}
-          </div>
+          <div className="goal-line">{goalText}</div>
           <div className="studied-line">
             {studiedDays} {t('studied_days_suffix')}
           </div>
@@ -248,6 +319,8 @@ export function MainPage({ onNavigate }: Props) {
         onClose={() => setHomeTourOpen(false)}
         subscreenRef={subscreenBtnRef}
         hideBtnRef={hideBtnRef}
+        mobileHandleRef={mobileHandleRef}
+        mobileMenuRef={mobileMenuBtnRef}
       />
     </div>
   );

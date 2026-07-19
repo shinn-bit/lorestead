@@ -17,24 +17,37 @@ interface Props {
   onClose: () => void;
   subscreenRef: RefObject<HTMLElement | null>;
   hideBtnRef: RefObject<HTMLElement | null>;
+  mobileHandleRef: RefObject<HTMLElement | null>;
+  mobileMenuRef: RefObject<HTMLElement | null>;
 }
 
 /**
- * ホーム画面の使い方ツアー：サブ画面ボタン → 表示を隠すボタンの2ステップ。
+ * ホーム画面の使い方ツアー。
+ * デスクトップ：サブ画面ボタン → 表示を隠すボタンの2ステップ。
+ * モバイル（640px以下）：タスクハンドル → メニューの2ステップ（対象要素が異なるため別系統）。
  * 初回はホーム到達時に自動表示、以後は「使い方」ボタンから再表示できる。
  */
-export function HomeTour({ open, onClose, subscreenRef, hideBtnRef }: Props) {
+export function HomeTour({ open, onClose, subscreenRef, hideBtnRef, mobileHandleRef, mobileMenuRef }: Props) {
   const { t } = useI18n();
   const [idx, setIdx] = useState(0);
+  const [isMobile, setIsMobile] = useState(false);
   const [geom, setGeom] = useState<Geom>({ top: 0, left: 0, width: 0, height: 0, popTop: false });
 
-  const STEPS: Step[] = [
-    { ref: subscreenRef, key: 'home_tour_1', preview: true },
-    { ref: hideBtnRef, key: 'home_tour_2' },
-  ];
+  const STEPS: Step[] = isMobile
+    ? [
+        { ref: mobileHandleRef, key: 'home_tour_m1' },
+        { ref: mobileMenuRef, key: 'home_tour_m2' },
+      ]
+    : [
+        { ref: subscreenRef, key: 'home_tour_1', preview: true },
+        { ref: hideBtnRef, key: 'home_tour_2' },
+      ];
 
   useEffect(() => {
-    if (open) setIdx(0);
+    if (open) {
+      setIdx(0);
+      setIsMobile(window.matchMedia('(max-width: 640px)').matches);
+    }
   }, [open]);
 
   useLayoutEffect(() => {
@@ -92,7 +105,10 @@ export function HomeTour({ open, onClose, subscreenRef, hideBtnRef }: Props) {
       <div className="tour-ring" style={{ top: geom.top, left: geom.left, width: geom.width, height: geom.height }} />
 
       {STEPS[idx].preview && (
-        <div className="home-tour-preview">
+        <div
+          className="home-tour-preview"
+          style={{ top: geom.popTop ? 'auto' : 24, bottom: geom.popTop ? 24 : 'auto' }}
+        >
           <span className="htp-label">{t('home_tour_preview')}</span>
           <div className="htp-mock">
             <div className="htp-video" />
