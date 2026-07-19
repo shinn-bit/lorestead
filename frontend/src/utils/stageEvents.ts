@@ -45,13 +45,13 @@ const HIGH_TIER_WEIGHT = 15;
 const LOW_TIER_WEIGHT = 1;
 
 /**
- * normal の出現率を指定した比率（既定60%、stage_05のみ75%）に固定しつつ、
- * 他イベントは重み比のまま normal 以外の枠（40% or 25%）を分け合う。
+ * normal の出現率を指定した比率（既定70%、stage_05のみ82%）に固定しつつ、
+ * 他イベントは重み比のまま normal 以外の枠を分け合う。
  */
 function buildEvents(
   normal: EventClip,
   others: { id: string; clip: EventClip; weight: number }[],
-  normalRatio = 0.6,
+  normalRatio = 0.7,
 ): StageEvent[] {
   const othersWeightSum = others.reduce((s, o) => s + o.weight, 0);
   const normalWeight = othersWeightSum > 0
@@ -104,7 +104,7 @@ export function getStageEvents(stage: number): StageEvent[] {
       return buildEvents(single(p('stage_05_normal.mp4')), [
         { id: 'coffee', weight: HIGH_TIER_WEIGHT, clip: single(p('stage_05_coffee.mp4')) },
         { id: 'owl', weight: LOW_TIER_WEIGHT, clip: set(p('stage_05_owl-1.mp4'), p('stage_05_owl-2.mp4'), p('stage_05_owl-3.mp4')) },
-      ], 0.75);
+      ], 0.82);
     default:
       return [];
   }
@@ -125,16 +125,33 @@ function randomLoopRepeats(): number {
   return 3 + Math.floor(Math.random() * 3);
 }
 
-/** ステージからイベントを1つ抽選し、実際に再生するクリップURLの並びに展開する */
-export function pickEventQueue(stage: number): string[] {
+export interface EventPick {
+  id: string;
+  queue: string[];
+}
+
+/**
+ * ステージからイベントを1つ抽選し、実際に再生するクリップURLの並びに展開する。
+ * excludeId を渡すと、その id（normalを除く）は今回の抽選から除外する
+ * （＝同じ非normalイベントが連続で流れるのを防ぐ）。
+ */
+export function pickEventQueue(stage: number, excludeId?: string): EventPick {
   const events = getStageEvents(stage);
-  if (events.length === 0) return [];
+  if (events.length === 0) return { id: '', queue: [] };
 
-  const ev = pickWeighted(events);
-  if (ev.clip.kind === 'single') return [ev.clip.src];
+  const pool = excludeId && excludeId !== 'normal'
+    ? events.filter((e) => e.id !== excludeId)
+    : events;
 
-  const { intro, loop, outro } = ev.clip;
-  const repeats = randomLoopRepeats();
-  const loopPart = Array.from({ length: repeats }, () => loop[Math.floor(Math.random() * loop.length)]);
-  return [intro, ...loopPart, outro];
+  const ev = pickWeighted(pool.length > 0 ? pool : events);
+  const queue = ev.clip.kind === 'single'
+    ? [ev.clip.src]
+    : (() => {
+        const { intro, loop, outro } = ev.clip as SetClip;
+        const repeats = randomLoopRepeats();
+        const loopPart = Array.from({ length: repeats }, () => loop[Math.floor(Math.random() * loop.length)]);
+        return [intro, ...loopPart, outro];
+      })();
+
+  return { id: ev.id, queue };
 }

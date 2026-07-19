@@ -40,13 +40,16 @@ export function WorldPlayer({ stage, isActive }: Props) {
   const queueRef = useRef<string[]>([]);
   const queueIdxRef = useRef(0);
   const pendingRef = useRef<PendingTransition | null>(null);
+  // 直前に選ばれた非normalイベントのid（同じイベントが連続で流れるのを防ぐため）
+  const lastEventIdRef = useRef<string | undefined>(undefined);
 
   /** 現在のステージから新しいイベントを抽選し、キューを差し替える */
   function startNewTurn(): string[] {
-    const q = pickEventQueue(stageRef.current);
-    queueRef.current = q;
+    const { id, queue } = pickEventQueue(stageRef.current, lastEventIdRef.current);
+    lastEventIdRef.current = id;
+    queueRef.current = queue;
     queueIdxRef.current = 0;
-    return q;
+    return queue;
   }
 
   /** 今の巡の次のクリップ。巡を使い切っていたら新しいイベントを抽選する */
