@@ -6,10 +6,14 @@ interface Props {
   isActive: boolean;
 }
 
-const FADE_MS = 700;
-
 interface PendingTransition {
   cleanup: () => void;
+}
+
+interface NextPick {
+  src: string;
+  /** 巡（キュー）を使い切っていた場合、新しく抽選した巡 */
+  newTurn?: { id: string; queue: string[] };
 }
 
 /**
@@ -42,24 +46,51 @@ export function WorldPlayer({ stage, isActive }: Props) {
   const pendingRef = useRef<PendingTransition | null>(null);
   // 直前に選ばれた非normalイベントのid（同じイベントが連続で流れるのを防ぐため）
   const lastEventIdRef = useRef<string | undefined>(undefined);
+  // 現在アイドル中（裏）のvideo要素に先読みしてある「次のクリップ」
+  const preloadRef = useRef<NextPick | null>(null);
 
-  /** 現在のステージから新しいイベントを抽選し、キューを差し替える */
-  function startNewTurn(): string[] {
-    const { id, queue } = pickEventQueue(stageRef.current, lastEventIdRef.current);
-    lastEventIdRef.current = id;
-    queueRef.current = queue;
-    queueIdxRef.current = 0;
-    return queue;
+  function frontVideo() {
+    return aIsFrontRef.current ? videoARef.current : videoBRef.current;
+  }
+  function backVideo() {
+    return aIsFrontRef.current ? videoBRef.current : videoARef.current;
   }
 
-  /** 今の巡の次のクリップ。巡を使い切っていたら新しいイベントを抽選する */
-  function nextClipSrc(): string | null {
-    queueIdxRef.current += 1;
-    if (queueIdxRef.current >= queueRef.current.length) {
-      const q = startNewTurn();
-      return q[0] ?? null;
+  /** 巡の状態を確定させる（新しい巡が来ていればそれに切り替え、なければ次の位置に進める） */
+  function beginTurn(turn: { id: string; queue: string[] }) {
+    lastEventIdRef.current = turn.id;
+    queueRef.current = turn.queue;
+    queueIdxRef.current = 0;
+  }
+
+  /** 「次に流すクリップ」を副作用なしに計算する（巡の続き、または新しい巡の1本目） */
+  function computeNext(): NextPick {
+    const nextIdx = queueIdxRef.current + 1;
+    if (nextIdx < queueRef.current.length) {
+      return { src: queueRef.current[nextIdx] };
     }
-    return queueRef.current[queueIdxRef.current] ?? null;
+    const { id, queue } = pickEventQueue(stageRef.current, lastEventIdRef.current);
+    return { src: queue[0] ?? '', newTurn: { id, queue } };
+  }
+
+  function commit(next: NextPick) {
+    if (next.newTurn) beginTurn(next.newTurn);
+    else queueIdxRef.current += 1;
+  }
+
+  /** 現在アイドル中のvideo要素に、次のクリップを裏側で読み込ませておく（つなぎ目の待ち時間をなくす） */
+  function schedulePreload() {
+    const back = backVideo();
+    if (!back) return;
+    const next = computeNext();
+    if (!next.src) {
+      preloadRef.current = null;
+      return;
+    }
+    preloadRef.current = next;
+    back.src = next.src;
+    back.loop = false;
+    back.load();
   }
 
   function playClip(video: HTMLVideoElement) {
@@ -69,11 +100,19 @@ export function WorldPlayer({ stage, isActive }: Props) {
   }
 
   function handleEnded() {
-    const src = nextClipSrc();
-    if (src) crossfadeTo(src);
+    const pre = preloadRef.current;
+    const next = pre ?? computeNext();
+    preloadRef.current = null;
+    commit(next);
+    if (next.src) crossfadeTo(next.src, !!pre);
   }
 
-  function crossfadeTo(src: string) {
+  /**
+   * src への切り替え。alreadyPreloaded=true なら、裏のvideoは既に先読み済みなので
+   * 読み込み待ちをスキップできる。実際に描画が始まる 'playing' を待ってから、
+   * フェードは行わず瞬時に前面を入れ替える（クロスフェード演出はなし）。
+   */
+  function crossfadeTo(src: string, alreadyPreloaded: boolean) {
     // 進行中の遷移があれば打ち切る（ステージ切替とクリップ終端が接近した場合の競合防止）
     pendingRef.current?.cleanup();
 
@@ -85,49 +124,61 @@ export function WorldPlayer({ stage, isActive }: Props) {
     // 旧フロント側の onended を即座に解除し、二重発火を防ぐ
     if (oldFront) oldFront.onended = null;
 
-    back.src = src;
-    back.loop = false;
-    back.load();
-
     let cancelled = false;
     let timer: ReturnType<typeof setTimeout> | null = null;
 
+    const cutToFront = () => {
+      if (cancelled) return;
+      back.onplaying = null;
+      if (timer) clearTimeout(timer);
+
+      aIsFrontRef.current = !isFrontA;
+      oldFront?.pause();
+      if (isFrontA) {
+        setBStyle({ opacity: 1, zIndex: 10 });
+        setAStyle({ opacity: 0, zIndex: 0 });
+      } else {
+        setAStyle({ opacity: 1, zIndex: 10 });
+        setBStyle({ opacity: 0, zIndex: 0 });
+      }
+      pendingRef.current = null;
+      // 次のクリップをすぐに裏で先読みし始める
+      schedulePreload();
+    };
+
+    // play() を呼んだ後、実際に描画が始まる 'playing' を待ってから切り替える。
+    // 保険として、稀に 'playing' が発火しないケースに備え最大250msでタイムアウトさせる。
+    const startAndWaitPlaying = () => {
+      back.onended = handleEnded;
+      back.onplaying = cutToFront;
+      attemptPlay(back);
+      timer = setTimeout(cutToFront, 250);
+    };
+
+    const cleanup = () => {
+      cancelled = true;
+      back.removeEventListener('canplay', onCanPlay);
+      back.onplaying = null;
+      if (timer) clearTimeout(timer);
+    };
+
     const onCanPlay = () => {
       if (cancelled) return;
-      playClip(back);
-
-      if (isFrontA) {
-        setBStyle({ opacity: 1, zIndex: 20, transition: `opacity ${FADE_MS}ms ease` });
-        setAStyle({ opacity: 0, zIndex: 10, transition: `opacity ${FADE_MS}ms ease` });
-      } else {
-        setAStyle({ opacity: 1, zIndex: 20, transition: `opacity ${FADE_MS}ms ease` });
-        setBStyle({ opacity: 0, zIndex: 10, transition: `opacity ${FADE_MS}ms ease` });
-      }
-
-      timer = setTimeout(() => {
-        if (cancelled) return;
-        aIsFrontRef.current = !isFrontA;
-        oldFront?.pause();
-        if (!isFrontA) {
-          setAStyle({ opacity: 1, zIndex: 10 });
-          setBStyle({ opacity: 0, zIndex: 0 });
-        } else {
-          setBStyle({ opacity: 1, zIndex: 10 });
-          setAStyle({ opacity: 0, zIndex: 0 });
-        }
-        pendingRef.current = null;
-      }, FADE_MS + 50);
+      startAndWaitPlaying();
     };
 
-    back.addEventListener('canplay', onCanPlay, { once: true });
+    const isReady = back.readyState >= 2; // HAVE_CURRENT_DATA 以上
 
-    pendingRef.current = {
-      cleanup: () => {
-        cancelled = true;
-        back.removeEventListener('canplay', onCanPlay);
-        if (timer) clearTimeout(timer);
-      },
-    };
+    if (alreadyPreloaded && isReady) {
+      startAndWaitPlaying();
+    } else {
+      back.src = src;
+      back.loop = false;
+      back.load();
+      back.addEventListener('canplay', onCanPlay, { once: true });
+    }
+
+    pendingRef.current = { cleanup };
   }
 
   // ---------- 初期化（最初のイベントを抽選して再生） ----------
@@ -136,13 +187,17 @@ export function WorldPlayer({ stage, isActive }: Props) {
     if (!vidA) return;
 
     stageRef.current = stage;
-    const q = startNewTurn();
-    const first = q[0];
+    const pick = pickEventQueue(stageRef.current);
+    beginTurn(pick);
+    const first = pick.queue[0];
     if (first) {
       vidA.src = first;
       vidA.loop = false;
       vidA.load();
-      vidA.addEventListener('canplay', () => playClip(vidA), { once: true });
+      vidA.addEventListener('canplay', () => {
+        playClip(vidA);
+        schedulePreload();
+      }, { once: true });
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -154,9 +209,11 @@ export function WorldPlayer({ stage, isActive }: Props) {
       return;
     }
     stageRef.current = stage;
-    const q = startNewTurn();
-    const first = q[0];
-    if (first) crossfadeTo(first);
+    preloadRef.current = null; // 旧ステージ向けの先読みは無効化
+    const pick = pickEventQueue(stageRef.current);
+    beginTurn(pick);
+    const first = pick.queue[0];
+    if (first) crossfadeTo(first, false);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [stage]);
 
@@ -164,7 +221,7 @@ export function WorldPlayer({ stage, isActive }: Props) {
   // (自動再生ポリシー等でplay()が拒否され続けた場合の保険。ユーザー操作時と定期チェックの両方で確認する)
   useEffect(() => {
     function resumeIfStuck() {
-      const front = aIsFrontRef.current ? videoARef.current : videoBRef.current;
+      const front = frontVideo();
       if (!front || !front.paused) return;
       if (front.ended) {
         handleEnded();
