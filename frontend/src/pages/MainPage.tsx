@@ -129,7 +129,6 @@ export function MainPage({ onNavigate }: Props) {
         <WorldPlayer stage={stage} isActive={effectiveIsActive} />
       </div>
       <div className="world-glow" />
-      <div className="world-scrim" />
       <div className="world-base" />
 
       {/* ── Title ── */}
