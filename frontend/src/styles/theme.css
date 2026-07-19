@@ -36,13 +36,15 @@
   color: var(--p-ink);
   font-family: 'EB Garamond', serif;
 }
+/* fixed（スクロール容器のabsoluteだと最初の1画面分しか覆えず、
+   スクロール後に質感・陰影が途切れて色の切れ目に見えるため） */
 .parchment::before {
-  content: ''; position: absolute; inset: 0; pointer-events: none; z-index: 0; opacity: 0.5;
+  content: ''; position: fixed; inset: 0; pointer-events: none; z-index: 0; opacity: 0.5;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.05'/%3E%3C/svg%3E");
   mix-blend-mode: multiply;
 }
 .parchment::after {
-  content: ''; position: absolute; inset: 0; pointer-events: none; z-index: 0;
+  content: ''; position: fixed; inset: 0; pointer-events: none; z-index: 0;
   box-shadow: inset 0 0 170px rgba(74,48,20,0.31), inset 0 0 50px rgba(74,48,20,0.16);
 }
 
@@ -78,7 +80,7 @@
 }
 .parchment .howlink:hover { color: var(--p-ink); }
 .parchment .langtoggle { display: flex; gap: 2px; background: rgba(58,42,23,0.07); padding: 4px; border-radius: 9999px; border: 1px solid var(--p-rule); }
-.parchment .langtoggle button { background: transparent; border: none; cursor: pointer; padding: 6px 12px; border-radius: 9999px; font-family: 'Cinzel', var(--jp); font-size: 11px; letter-spacing: 0.1em; color: var(--p-ink-soft); transition: all 0.2s; }
+.parchment .langtoggle button { background: transparent; border: none; cursor: pointer; padding: 6px 12px; border-radius: 9999px; font-family: 'Cinzel', var(--jp); font-size: 11px; letter-spacing: 0.1em; color: var(--p-ink-soft); transition: all 0.2s; white-space: nowrap; }
 .parchment .langtoggle button.on { background: var(--p-ink); color: var(--paper-hi); }
 .parchment .langtoggle button:not(.on):hover { color: var(--p-ink); }
 
@@ -197,7 +199,8 @@
    CHRONICLE / History  (.scr-chronicle)
    ════════════════════════════════════════════════════════════════ */
 .scr-chronicle { position: absolute; inset: 0; z-index: 1001; overflow-y: auto; overflow-x: hidden; }
-.scr-chronicle .topbar { position: sticky; background: linear-gradient(180deg, var(--paper-hi) 40%, rgba(239,230,207,0)); }
+/* 非固定：コンテンツと一緒にスクロールで流す（半透明バーの下に文字が透けるのを防ぐ） */
+.scr-chronicle .topbar { position: relative; }
 .scr-chronicle .header { position: relative; z-index: 1; text-align: center; padding: 28px 40px 8px; }
 .scr-chronicle .eyebrow { font-family: 'Cinzel', serif; font-size: 11px; letter-spacing: 0.4em; text-transform: uppercase; color: var(--p-gold); }
 .scr-chronicle .header h1 { font-family: 'Cinzel', serif; font-weight: 600; font-size: 34px; letter-spacing: 0.05em; color: var(--p-ink); margin-top: 10px; }
@@ -256,6 +259,25 @@
 .scr-chronicle .cal-legend .cal-dot.blank { background: var(--p-ink-faint); }
 
 @media (max-width: 640px) {
+  /* topbar: 詰めてアイコンナビに（Setup/Chronicle共通） */
+  .parchment .topbar { padding: 14px 16px; }
+  .parchment .wordmark { font-size: 17px; letter-spacing: 0.18em; }
+  .parchment .topbar-right { gap: 8px; }
+  .parchment .langtoggle button { padding: 5px 10px; font-size: 10px; }
+  .parchment .nav a, .parchment .nav button { padding: 8px 12px; font-size: 0; letter-spacing: 0; gap: 0; }
+  .parchment .nav svg { width: 15px; height: 15px; }
+  .parchment .howlink { font-size: 11px; padding: 6px 2px; }
+
+  /* Chronicle: 見出し・カレンダーの文字と余白を縮める */
+  .scr-chronicle .header { padding: 18px 16px 4px; }
+  .scr-chronicle .header h1 { font-size: 24px; }
+  .scr-chronicle .header .sub { font-size: 14px; }
+  .scr-chronicle .eyebrow { font-size: 10px; letter-spacing: 0.3em; }
+  .scr-chronicle .divider { margin: 16px 0 4px; }
+  .scr-chronicle .cal-wrap { padding: 6px 10px 22px; }
+  .scr-chronicle .cal { padding: 14px 10px 16px; }
+  .scr-chronicle .cal-month { font-size: 13px; }
+  .scr-chronicle .cal-legend { gap: 12px; flex-wrap: wrap; margin-top: 12px; }
   .scr-chronicle .cal-daynum { font-size: 10px; }
   .scr-chronicle .cal-cell { padding: 4px; }
 }
