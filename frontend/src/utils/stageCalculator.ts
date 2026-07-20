@@ -1,5 +1,3 @@
-import { ASSET_BASE } from './assetBase';
-
 export const MAX_STAGE = 5;
 
 export interface VideoConfig {
@@ -15,7 +13,7 @@ export interface VideoConfig {
 export function getVideoConfig(stage: number): VideoConfig {
   if (stage < 1 || stage > MAX_STAGE) return {};
   const pad = String(stage).padStart(2, '0');
-  return { loopSrc: `${ASSET_BASE}/assets/worlds/town/stage_${pad}/stage_${pad}_normal.mp4` };
+  return { loopSrc: `/assets/worlds/town/stage_${pad}/stage_${pad}_normal.mp4` };
 }
 
 /**
@@ -26,7 +24,7 @@ export function getVideoConfig(stage: number): VideoConfig {
 export function getStillSrc(stage: number): string | undefined {
   if (stage < 1 || stage > MAX_STAGE) return undefined;
   const pad = String(stage).padStart(2, '0');
-  return `${ASSET_BASE}/assets/worlds/town/stills/stage_${pad}.png`;
+  return `/assets/worlds/town/stills/stage_${pad}.png`;
 }
 
 // ── タスク型成長 ───────────────────────────────────────
