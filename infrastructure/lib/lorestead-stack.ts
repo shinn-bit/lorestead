@@ -4,6 +4,9 @@ import * as dynamodb from 'aws-cdk-lib/aws-dynamodb';
 import * as lambda from 'aws-cdk-lib/aws-lambda';
 import * as apigateway from 'aws-cdk-lib/aws-apigateway';
 import * as iam from 'aws-cdk-lib/aws-iam';
+import * as s3 from 'aws-cdk-lib/aws-s3';
+import * as cloudfront from 'aws-cdk-lib/aws-cloudfront';
+import * as origins from 'aws-cdk-lib/aws-cloudfront-origins';
 import { Construct } from 'constructs';
 import * as path from 'path';
 
@@ -153,7 +156,35 @@ export class LoresteadStack extends cdk.Stack {
     progressResource.addMethod('GET', new apigateway.LambdaIntegration(progressHandler));
     progressResource.addMethod('PUT', new apigateway.LambdaIntegration(progressHandler));
 
+    // ─── 動画アセット配信（S3 + CloudFront） ────────────────────
+    // 世界の動画・静止画はリポジトリ同梱をやめ、S3に置いてCloudFront経由で配信する。
+    // バケットは非公開（CloudFrontのOACからのみ読み取り可）。
+    const assetsBucket = new s3.Bucket(this, 'AssetsBucket', {
+      blockPublicAccess: s3.BlockPublicAccess.BLOCK_ALL,
+      encryption: s3.BucketEncryption.S3_MANAGED,
+      removalPolicy: cdk.RemovalPolicy.RETAIN,
+    });
+
+    const assetsDistribution = new cloudfront.Distribution(this, 'AssetsDistribution', {
+      comment: 'Lorestead world video assets',
+      defaultBehavior: {
+        origin: origins.S3BucketOrigin.withOriginAccessControl(assetsBucket),
+        viewerProtocolPolicy: cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
+        cachePolicy: cloudfront.CachePolicy.CACHING_OPTIMIZED,
+        allowedMethods: cloudfront.AllowedMethods.ALLOW_GET_HEAD,
+      },
+      priceClass: cloudfront.PriceClass.PRICE_CLASS_200,
+    });
+
     // ─── Outputs ───────────────────────────────────────────────
+    new cdk.CfnOutput(this, 'AssetsBucketName', {
+      value: assetsBucket.bucketName,
+      exportName: 'LoresteadAssetsBucket',
+    });
+    new cdk.CfnOutput(this, 'AssetsCdnDomain', {
+      value: assetsDistribution.distributionDomainName,
+      exportName: 'LoresteadAssetsCdnDomain',
+    });
     new cdk.CfnOutput(this, 'ApiUrl', {
       value: api.url,
       exportName: 'LoresteadApiUrl',

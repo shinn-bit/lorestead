@@ -2,6 +2,10 @@ videos/
 images/
 app_specification*.docx
 
+# World video/still assets: served via S3 + CloudFront (see infrastructure/),
+# kept locally for dev but not committed. Upload with: aws s3 sync <world dir> s3://<bucket>/assets/worlds/<world>
+frontend/public/assets/worlds/
+
 # Dependencies
 node_modules/
 */node_modules/
