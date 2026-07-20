@@ -4,6 +4,7 @@
  * という3部構成のイベント（cat/talk/owl等）で構成される。
  * ここでは、ステージごとの動画一覧を定義し、重み付き抽選で次に流す1本（または3部構成の一連）を選ぶ。
  */
+import { ASSET_BASE } from './assetBase';
 
 export interface SingleClip {
   kind: 'single';
@@ -31,7 +32,7 @@ export interface StageEvent {
   muted: boolean;
 }
 
-const BASE = '/assets/worlds/town';
+const BASE = `${ASSET_BASE}/assets/worlds/town`;
 
 function stageDir(stage: number): string {
   return `${BASE}/stage_${String(stage).padStart(2, '0')}`;
