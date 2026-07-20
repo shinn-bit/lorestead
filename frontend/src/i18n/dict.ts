@@ -23,6 +23,10 @@ export const dict = {
   /* ── Home · clock (decorative, optional) ── */
   clock_label:     { en: 'Clock', ja: '時計' },
 
+  /* ── Home · sound toggle (off by default) ── */
+  audio_turn_on:   { en: 'Turn on sound', ja: '音声をオンにする' },
+  audio_turn_off:  { en: 'Turn off sound', ja: '音声をオフにする' },
+
   /* ── Home · guided tour ── */
   how_to_use:      { en: 'How to use', ja: '使い方' },
   home_tour_1:     { en: 'Tap <b>Sub Screen</b> to shrink the world down to a small floating window — perfect for keeping it visible while you work elsewhere.', ja: '<b>サブ画面</b>をタップすると、世界を小さなウィンドウとして表示できます。他の作業をしながらでも見ていられます。' },
@@ -84,6 +88,8 @@ export const dict = {
 
   /* ── End day modal ── */
   end_ready:        { en: 'Ready to end today?', ja: '今日を終えますか？' },
+  end_complete_h:   { en: 'Well done!', ja: 'お疲れ様です！' },
+  end_complete_p:   { en: 'Every task is finished — the town stands complete. End today?', ja: 'すべてのタスクを終えました。街も完成しています。今日を終えますか？' },
   session_ended:    { en: 'Today, wrapped up.', ja: '今日はここまで。' },
   start_next_day:   { en: 'Begin Next Day', ja: '次の日を始める' },
 } satisfies Record<string, Entry>;

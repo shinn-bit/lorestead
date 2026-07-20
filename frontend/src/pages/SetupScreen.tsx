@@ -33,7 +33,7 @@ export function SetupScreen({ onStartTasks, onNavigate }: Props) {
   const [view, setView] = useState<WizardView>(() => (getGoal() ? 'task' : 'goal'));
   const [goalDateInput, setGoalDateInput] = useState(() => getGoal()?.date ?? '');
   const [goalLabelInput, setGoalLabelInput] = useState(() => getGoal()?.label ?? '');
-  const [tasks, setTasks] = useState<string[]>(['', '', '']);
+  const [tasks, setTasks] = useState<string[]>(['', '', '', '', '']);
 
   // guided tour（タスク入力に到達した時にだけ開く）
   const [tourOpen, setTourOpen] = useState(false);

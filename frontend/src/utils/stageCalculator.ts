@@ -44,10 +44,16 @@ function clampStage(stage: number): number {
   return Math.min(MAX_STAGE, Math.max(1, stage));
 }
 
-/** 完了割合を5段階に比例配分（全完了で stage5 完成） */
+/**
+ * 完了割合を5段階に比例配分。
+ * 分母は「タスク数 - 1」：最後のタスクに取り組んでいる間に完成した街（stage5）が
+ * 見えるようにするため（全タスク完了と同時にstage5だと、完成を眺める時間がない）。
+ * タスク1つの日は従来どおり 1 → 5。
+ */
 export function getStageByTasks(doneCount: number, totalCount: number): number {
   if (totalCount <= 0) return 1;
-  return clampStage(1 + Math.round((doneCount / totalCount) * (MAX_STAGE - 1)));
+  const span = Math.max(totalCount - 1, 1);
+  return clampStage(1 + Math.round((doneCount / span) * (MAX_STAGE - 1)));
 }
 
 /** タスクの完了状況から現在の stage を算出 */

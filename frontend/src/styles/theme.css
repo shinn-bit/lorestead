@@ -345,6 +345,8 @@
 .scr-world .view-btn:hover { color: var(--h-ink); }
 .scr-world .view-btn.on { color: var(--h-ember); }
 .scr-world .view-btn svg { width: 13px; height: 13px; flex-shrink: 0; }
+.scr-world .view-btn-icon-only { padding: 4px 6px; }
+.scr-world .view-btn-icon-only svg { width: 15px; height: 15px; }
 
 /* ── task ledger: hairline rows, diamond marks ── */
 .scr-world .ledger { position: absolute; top: 104px; right: 40px; z-index: 10; width: 280px; display: flex; flex-direction: column; max-height: calc(100dvh - 230px); }
@@ -420,7 +422,6 @@
 .scr-world .mobile-icon-btn { background: none; border: none; color: rgba(247,236,216,0.7); padding: 6px; cursor: pointer; }
 .scr-world .mobile-icon-btn svg { width: 20px; height: 20px; display: block; }
 .scr-world .mobile-brand { font-family: 'Cinzel', serif; font-size: 15px; letter-spacing: 0.26em; text-indent: 0.26em; color: var(--h-gold); text-shadow: 0 2px 10px rgba(0,0,0,0.85); }
-.scr-world .mobile-bar-spacer { width: 32px; }
 
 .scr-world .mobile-menu-backdrop { position: fixed; inset: 0; z-index: 996; background: transparent; }
 .scr-world .mobile-menu-panel {

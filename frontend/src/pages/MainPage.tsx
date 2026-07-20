@@ -8,6 +8,7 @@ import { LangToggle } from '../components/LangToggle';
 import { GoalPill } from '../components/GoalDate/GoalPill';
 import { getStage, getOverallProgress, MAX_STAGE } from '../utils/stageCalculator';
 import { getGoal, daysUntil } from '../utils/goalStore';
+import { isAudioAllowed, setAudioAllowed } from '../utils/audioStore';
 import { saveDailyRecord, countStudiedDays } from '../utils/dailyRecordStore';
 import { WorldPlayer } from '../components/World/WorldPlayer';
 import { EndDayModal } from '../components/EndSession/EndDayModal';
@@ -22,6 +23,12 @@ const EyeOffIcon = () => (
 );
 const ClockIcon = () => (
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="8.5" /><polyline points="12 7 12 12 16 14" /></svg>
+);
+const MicIcon = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2a3 3 0 0 0-3 3v6a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z" /><path d="M19 10v1a7 7 0 0 1-14 0v-1" /><line x1="12" y1="18" x2="12" y2="22" /><line x1="8" y1="22" x2="16" y2="22" /></svg>
+);
+const MicOffIcon = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><line x1="1" y1="1" x2="23" y2="23" /><path d="M9 9v3a3 3 0 0 0 5.12 2.12M15 9.34V4a3 3 0 0 0-5.94-.6" /><path d="M17 16.95A7 7 0 0 1 5 12v-2m14 0v2a7 7 0 0 1-.11 1.23" /><line x1="12" y1="19" x2="12" y2="23" /><line x1="8" y1="23" x2="16" y2="23" /></svg>
 );
 const MenuIcon = () => (
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><line x1="4" y1="7" x2="20" y2="7" /><line x1="4" y1="12" x2="20" y2="12" /><line x1="4" y1="17" x2="20" y2="17" /></svg>
@@ -41,6 +48,7 @@ export function MainPage({ onNavigate }: Props) {
   const [isMini, setIsMini]                         = useState(false);
   const [uiHidden, setUiHidden]                     = useState(false);
   const [showClock, setShowClock]                   = useState(false);
+  const [audioOn, setAudioOn]                       = useState<boolean>(() => isAudioAllowed());
   const [homeTourOpen, setHomeTourOpen]             = useState<boolean>(() => !loadHomeTourSeen());
   const [studiedDays, setStudiedDays]               = useState(0);
   const [mobileSheetOpen, setMobileSheetOpen]       = useState(false);
@@ -61,6 +69,15 @@ export function MainPage({ onNavigate }: Props) {
   }, []);
 
   const stage = config ? getStage(config) : 1;
+  const allDone = !!config && config.tasks.length > 0 && config.tasks.every((task) => task.done);
+
+  // 最後のタスクを終えた瞬間（未完了→全完了への遷移）に「今日を終えますか？」を自動で開く。
+  // 復元直後から全完了だった場合（前回モーダルを閉じてリロード等）には開かない。
+  const prevAllDoneRef = useRef(allDone);
+  useEffect(() => {
+    if (allDone && !prevAllDoneRef.current) setShowEndDay(true);
+    prevAllDoneRef.current = allDone;
+  }, [allDone]);
 
   // ── config 未設定：Setup 画面 ──
   if (!config) {
@@ -82,6 +99,14 @@ export function MainPage({ onNavigate }: Props) {
     : goalDaysLeft > 0    ? `${goalPrefix}${goalDaysLeft} ${t('goal_days_left_suffix')}`
     : goalDaysLeft === 0  ? `${goalPrefix}${t('goal_today_label')}`
     :                       `${goalPrefix}${t('goal_overdue_label')}`;
+
+  function toggleAudio() {
+    setAudioOn((v) => {
+      const next = !v;
+      setAudioAllowed(next);
+      return next;
+    });
+  }
 
   async function handleSubScreen() {
     if (isPipOpen) { closePip(); return; }
@@ -126,7 +151,7 @@ export function MainPage({ onNavigate }: Props) {
     return (
       <div className="scr-world ui-hidden" onClick={() => setUiHidden(false)}>
         <div className="absolute inset-0" style={{ zIndex: 0 }}>
-          <WorldPlayer stage={stage} isActive={effectiveIsActive} />
+          <WorldPlayer stage={stage} isActive={effectiveIsActive} audioOn={audioOn} />
         </div>
         <div className="hide-hint">{t('hide_ui_hint')}</div>
       </div>
@@ -140,7 +165,7 @@ export function MainPage({ onNavigate }: Props) {
 
       {/* ── World video ── */}
       <div className="absolute inset-0" style={{ zIndex: 0 }}>
-        <WorldPlayer stage={stage} isActive={effectiveIsActive} />
+        <WorldPlayer stage={stage} isActive={effectiveIsActive} audioOn={audioOn} />
       </div>
       <div className="world-glow" />
       <div className="world-base" />
@@ -151,7 +176,13 @@ export function MainPage({ onNavigate }: Props) {
           <MenuIcon />
         </button>
         <span className="mobile-brand">LORESTEAD</span>
-        <span className="mobile-bar-spacer" />
+        <button
+          className="mobile-icon-btn"
+          onClick={toggleAudio}
+          title={audioOn ? t('audio_turn_off') : t('audio_turn_on')}
+        >
+          {audioOn ? <MicIcon /> : <MicOffIcon />}
+        </button>
       </div>
 
       {mobileMenuOpen && (
@@ -256,6 +287,13 @@ export function MainPage({ onNavigate }: Props) {
             <span style={{ whiteSpace: 'nowrap' }}>{t('clock_label')}</span>
           </button>
           <button
+            className={`view-btn view-btn-icon-only ${audioOn ? 'on' : ''}`}
+            onClick={toggleAudio}
+            title={audioOn ? t('audio_turn_off') : t('audio_turn_on')}
+          >
+            {audioOn ? <MicIcon /> : <MicOffIcon />}
+          </button>
+          <button
             ref={hideBtnRef}
             className="view-btn"
             onClick={() => setUiHidden(true)}
@@ -296,7 +334,7 @@ export function MainPage({ onNavigate }: Props) {
         <EndDayModal
           tasks={config.tasks}
           currentStage={stage}
-          isCompleted={stage >= MAX_STAGE}
+          isCompleted={allDone}
           onFinalize={handleFinalizeDay}
           onCancel={() => setShowEndDay(false)}
           onBeginNextDay={handleBeginNextDay}

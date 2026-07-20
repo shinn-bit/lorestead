@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react';
 import type { GrowthConfig, TaskItem } from '../utils/stageCalculator';
-import { getStageByTasks, MAX_STAGE } from '../utils/stageCalculator';
+import { getStageByTasks } from '../utils/stageCalculator';
 import type { DailyRecord } from '../utils/dailyRecordStore';
 import { todayLocalDateStr } from '../utils/dateUtils';
 
@@ -79,7 +79,8 @@ export function useDailyProgress() {
       finalizedAt: Date.now(),
       tasks: current.tasks,
       stage,
-      isCompleted: stage >= MAX_STAGE && totalCount > 0,
+      // stage5は最後のタスク着手中にも到達するため、「完了」は全タスク達成で判定する
+      isCompleted: totalCount > 0 && doneCount === totalCount,
       studied: doneCount > 0,
     };
   }, [current]);

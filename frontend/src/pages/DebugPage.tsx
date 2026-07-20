@@ -41,7 +41,7 @@ export function DebugPage() {
     <div className="relative w-full h-dvh overflow-hidden bg-black">
       {/* World - debug page では常に明るく表示 */}
       <div className="absolute inset-0">
-        <WorldPlayer stage={stage} isActive={true} />
+        <WorldPlayer stage={stage} isActive={true} audioOn={false} />
       </div>
 
       {/* Debug panel */}

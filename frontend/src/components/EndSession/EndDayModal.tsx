@@ -16,7 +16,7 @@ interface Props {
   onBeginNextDay: () => void;
 }
 
-export function EndDayModal({ tasks, currentStage, onFinalize, onCancel, onBeginNextDay }: Props) {
+export function EndDayModal({ tasks, currentStage, isCompleted, onFinalize, onCancel, onBeginNextDay }: Props) {
   const { t } = useI18n();
   const [phase, setPhase] = useState<Phase>('confirm');
 
@@ -39,10 +39,10 @@ export function EndDayModal({ tasks, currentStage, onFinalize, onCancel, onBegin
         {phase === 'confirm' && (
           <>
             <h2 className="text-center text-xl tracking-[0.15em] text-[#f5e6d3] uppercase">
-              {t('end_session')}
+              {isCompleted ? t('end_complete_h') : t('end_session')}
             </h2>
             <p className="text-center text-sm text-[#f5e6d3]/60 tracking-widest leading-relaxed">
-              {t('end_ready')}<br />
+              {isCompleted ? t('end_complete_p') : t('end_ready')}<br />
               {doneCount} / {totalCount} {t('tasks_word')} · {t('stage_word')} {currentStage}
             </p>
 

@@ -4,6 +4,8 @@ import { pickEventQueue } from '../../utils/stageEvents';
 interface Props {
   stage: number;
   isActive: boolean;
+  /** マイクボタンで音声が許可されているか（既定オフ） */
+  audioOn: boolean;
 }
 
 interface PendingTransition {
@@ -12,8 +14,10 @@ interface PendingTransition {
 
 interface NextPick {
   src: string;
+  /** このクリップを音ありで再生するか（巡全体で共通） */
+  muted: boolean;
   /** 巡（キュー）を使い切っていた場合、新しく抽選した巡 */
-  newTurn?: { id: string; queue: string[] };
+  newTurn?: { id: string; queue: string[]; muted: boolean };
 }
 
 /**
@@ -28,9 +32,11 @@ function attemptPlay(video: HTMLVideoElement, retriesLeft = 5) {
   });
 }
 
-export function WorldPlayer({ stage, isActive }: Props) {
+export function WorldPlayer({ stage, isActive, audioOn }: Props) {
   const videoARef = useRef<HTMLVideoElement>(null);
   const videoBRef = useRef<HTMLVideoElement>(null);
+  // 命令的なコールバック（onended/onplaying等）から常に最新値を読めるようref化
+  const audioOnRef = useRef(audioOn);
 
   // A/B どちらが「前面（表示中）」か
   const aIsFrontRef = useRef(true);
@@ -46,6 +52,8 @@ export function WorldPlayer({ stage, isActive }: Props) {
   const pendingRef = useRef<PendingTransition | null>(null);
   // 直前に選ばれた非normalイベントのid（同じイベントが連続で流れるのを防ぐため）
   const lastEventIdRef = useRef<string | undefined>(undefined);
+  // 現在の巡は音ありで再生するか
+  const turnMutedRef = useRef(true);
   // 現在アイドル中（裏）のvideo要素に先読みしてある「次のクリップ」
   const preloadRef = useRef<NextPick | null>(null);
 
@@ -57,20 +65,21 @@ export function WorldPlayer({ stage, isActive }: Props) {
   }
 
   /** 巡の状態を確定させる（新しい巡が来ていればそれに切り替え、なければ次の位置に進める） */
-  function beginTurn(turn: { id: string; queue: string[] }) {
+  function beginTurn(turn: { id: string; queue: string[]; muted: boolean }) {
     lastEventIdRef.current = turn.id;
     queueRef.current = turn.queue;
     queueIdxRef.current = 0;
+    turnMutedRef.current = turn.muted;
   }
 
   /** 「次に流すクリップ」を副作用なしに計算する（巡の続き、または新しい巡の1本目） */
   function computeNext(): NextPick {
     const nextIdx = queueIdxRef.current + 1;
     if (nextIdx < queueRef.current.length) {
-      return { src: queueRef.current[nextIdx] };
+      return { src: queueRef.current[nextIdx], muted: turnMutedRef.current };
     }
-    const { id, queue } = pickEventQueue(stageRef.current, lastEventIdRef.current);
-    return { src: queue[0] ?? '', newTurn: { id, queue } };
+    const { id, queue, muted } = pickEventQueue(stageRef.current, lastEventIdRef.current);
+    return { src: queue[0] ?? '', muted, newTurn: { id, queue, muted } };
   }
 
   function commit(next: NextPick) {
@@ -88,6 +97,8 @@ export function WorldPlayer({ stage, isActive }: Props) {
       return;
     }
     preloadRef.current = next;
+    // 表に出るまでは無音のまま先読みする（切り替わる前に音が鳴り出さないように）
+    back.muted = true;
     back.src = next.src;
     back.loop = false;
     back.load();
@@ -104,15 +115,16 @@ export function WorldPlayer({ stage, isActive }: Props) {
     const next = pre ?? computeNext();
     preloadRef.current = null;
     commit(next);
-    if (next.src) crossfadeTo(next.src, !!pre);
+    if (next.src) crossfadeTo(next.src, !!pre, next.muted);
   }
 
   /**
    * src への切り替え。alreadyPreloaded=true なら、裏のvideoは既に先読み済みなので
    * 読み込み待ちをスキップできる。実際に描画が始まる 'playing' を待ってから、
    * フェードは行わず瞬時に前面を入れ替える（クロスフェード演出はなし）。
+   * muted は、この巡を音ありで再生するか（表に出た瞬間にだけ適用する）。
    */
-  function crossfadeTo(src: string, alreadyPreloaded: boolean) {
+  function crossfadeTo(src: string, alreadyPreloaded: boolean, muted: boolean) {
     // 進行中の遷移があれば打ち切る（ステージ切替とクリップ終端が接近した場合の競合防止）
     pendingRef.current?.cleanup();
 
@@ -132,6 +144,9 @@ export function WorldPlayer({ stage, isActive }: Props) {
       back.onplaying = null;
       if (timer) clearTimeout(timer);
 
+      // 実際に表に出る瞬間にだけ音を解禁する（先読み・再生開始待ちの間は無音のまま）。
+      // マイクボタンがオフなら、イベント側の設定に関わらず無音のまま。
+      back.muted = muted || !audioOnRef.current;
       aIsFrontRef.current = !isFrontA;
       oldFront?.pause();
       if (isFrontA) {
@@ -172,6 +187,7 @@ export function WorldPlayer({ stage, isActive }: Props) {
     if (alreadyPreloaded && isReady) {
       startAndWaitPlaying();
     } else {
+      back.muted = true; // 表に出るまでは無音（cutToFrontで解禁する）
       back.src = src;
       back.loop = false;
       back.load();
@@ -191,6 +207,7 @@ export function WorldPlayer({ stage, isActive }: Props) {
     beginTurn(pick);
     const first = pick.queue[0];
     if (first) {
+      vidA.muted = pick.muted || !audioOnRef.current;
       vidA.src = first;
       vidA.loop = false;
       vidA.load();
@@ -213,7 +230,7 @@ export function WorldPlayer({ stage, isActive }: Props) {
     const pick = pickEventQueue(stageRef.current);
     beginTurn(pick);
     const first = pick.queue[0];
-    if (first) crossfadeTo(first, false);
+    if (first) crossfadeTo(first, false, pick.muted);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [stage]);
 
@@ -248,20 +265,26 @@ export function WorldPlayer({ stage, isActive }: Props) {
     });
   }, [isActive]);
 
+  // ---------- 音声トグル：切り替えた瞬間、今流れているクリップにも即反映する ----------
+  useEffect(() => {
+    audioOnRef.current = audioOn;
+    const front = frontVideo();
+    if (front) front.muted = turnMutedRef.current || !audioOn;
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [audioOn]);
+
   const brightness = isActive ? 'brightness(1)' : 'brightness(0.45)';
 
   return (
     <div className="relative w-full h-full bg-black overflow-hidden">
       <video
         ref={videoARef}
-        muted
         playsInline
         className="absolute inset-0 w-full h-full object-cover"
         style={{ ...aStyle, filter: brightness }}
       />
       <video
         ref={videoBRef}
-        muted
         playsInline
         className="absolute inset-0 w-full h-full object-cover"
         style={{ ...bStyle, filter: brightness }}
