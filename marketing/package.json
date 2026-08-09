@@ -1,0 +1,15 @@
+{
+  "name": "lorestead-marketing",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Promo / App Store image generator — composites real app screenshots into device frames using the Lorestead design system.",
+  "scripts": {
+    "render": "node render.mjs",
+    "render:hero": "node render.mjs hero-landscape hero-square",
+    "list": "node render.mjs --list"
+  },
+  "devDependencies": {
+    "puppeteer": "^23.0.0"
+  }
+}
