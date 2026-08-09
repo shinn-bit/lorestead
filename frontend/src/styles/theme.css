@@ -258,7 +258,15 @@
 .scr-chronicle .cal-legend .cal-dot.partial { background: var(--p-gold); }
 .scr-chronicle .cal-legend .cal-dot.blank { background: var(--p-ink-faint); }
 
-@media (max-width: 640px) {
+/* ── コンパクト表示の条件（Setup / Chronicle / World 共通） ──
+   `max-width: 640px`（スマホ縦）に加えて、`max-height: 560px` かつ
+   `max-width: 1024px`（＝スマホ横持ち）でも同じモバイルUIを使う。
+   デスクトップ用のレイアウトは絶対配置＋大きな文字で「画面の高さが700px前後
+   ある」ことを前提にしているため、横持ち（高さ400px前後）だと見出し・時計・
+   タスク台帳・End Todayが互いに重なって読めなくなる。
+   タブレット横（iPad 1024×768など）は高さが足りるので巻き込まれない。
+   条件を足すときは World 側の同じ条件のブロックと必ず揃えること。 */
+@media (max-width: 640px), (max-height: 560px) and (max-width: 1024px) {
   /* topbar: 詰めてアイコンナビに（Setup/Chronicle共通） */
   .parchment .topbar { padding: 14px 16px; }
   .parchment .wordmark { font-size: 17px; letter-spacing: 0.18em; }
@@ -267,6 +275,20 @@
   .parchment .nav a, .parchment .nav button { padding: 8px 12px; font-size: 0; letter-spacing: 0; gap: 0; }
   .parchment .nav svg { width: 15px; height: 15px; }
   .parchment .howlink { font-size: 11px; padding: 6px 2px; }
+
+  /* Setup: topbar を非固定にして本文と一緒に流す。
+     デスクトップは .scr-setup が flex + align-items:center で、topbar は
+     absolute・page は margin-top:96px でバーを避ける、という構成。これは
+     ページが画面に収まる前提の作りで、小さい画面では中央揃えが上方向にも
+     はみ出し、本文がバーの下に潜り込む。Chronicle と同じく topbar を
+     position:relative で流し込めば、バーが何行になっても本文が必ず下に来る。 */
+  .scr-setup { display: block; }
+  .scr-setup .topbar { position: relative; flex-wrap: wrap; row-gap: 8px; }
+  .scr-setup .page { width: 92vw; margin: 8px auto 40px; padding: 34px 22px 30px; }
+  .scr-setup .eyebrow { font-size: 10px; letter-spacing: 0.3em; margin-bottom: 12px; }
+  .scr-setup h1 { font-size: 24px; }
+  .scr-setup .sub { font-size: 15px; }
+  .scr-setup .divider { margin: 20px 0 22px; }
 
   /* Chronicle: 見出し・カレンダーの文字と余白を縮める */
   .scr-chronicle .header { padding: 18px 16px 4px; }
@@ -280,6 +302,44 @@
   .scr-chronicle .cal-legend { gap: 12px; flex-wrap: wrap; margin-top: 12px; }
   .scr-chronicle .cal-daynum { font-size: 10px; }
   .scr-chronicle .cal-cell { padding: 4px; }
+}
+
+/* ── スマホ横持ち（Setup / Chronicle）──
+   上のコンパクト指定をベースに、横持ち特有の事情だけを上書きする。
+   足りないのは高さだけなので、縦方向の余白・字送りをさらに削る。 */
+@media (max-height: 560px) and (max-width: 1024px) {
+  .parchment .topbar { padding: 10px 16px; }
+
+  .scr-setup .page { width: min(92vw, 620px); margin: 4px auto 28px; padding: 24px 30px 26px; }
+  .scr-setup .eyebrow { margin-bottom: 8px; }
+  .scr-setup h1 { font-size: 21px; }
+  .scr-setup .sub { font-size: 14px; margin-top: 6px; }
+  .scr-setup .divider { margin: 12px 0 14px; }
+  .scr-setup .custom-row { margin-top: 12px; }
+  .scr-setup .custom-row input { padding: 8px 12px; font-size: 15px; }
+  .scr-setup .tasklist { gap: 4px; }
+  .scr-setup .task-row input { font-size: 15px; padding: 6px 4px; }
+  .scr-setup .begin { margin-top: 16px; padding: 12px 0; font-size: 13px; }
+  .scr-setup .backlink { margin-bottom: 8px; }
+
+  .scr-chronicle .header { padding: 10px 16px 0; }
+  .scr-chronicle .header h1 { font-size: 20px; margin-top: 6px; }
+  .scr-chronicle .header .sub { font-size: 13px; margin-top: 4px; }
+  .scr-chronicle .divider { margin: 10px 0 2px; }
+  .scr-chronicle .cal-wrap { padding: 4px 16px 18px; }
+  .scr-chronicle .cal { width: min(94vw, 720px); padding: 12px 12px 14px; }
+  .scr-chronicle .cal-head { margin-bottom: 10px; }
+  /* 縦長セル（0.86）のままだと6週分でスクロールが長くなりすぎる */
+  .scr-chronicle .cal-cell { aspect-ratio: 1.15; }
+  .scr-chronicle .cal-legend { margin-top: 10px; }
+
+  /* ツアー吹き出し：上下40pxに固定配置されるので、縮めないと
+     スポットライト（ハイライト対象）を覆ってしまう */
+  .tour-pop { width: min(84vw, 460px); padding: 14px 20px 12px; }
+  .tour-text { font-size: 14px; line-height: 1.45; }
+  .tour-step { margin-bottom: 6px; }
+  .tour-actions { margin-top: 10px; }
+  .tour-next { padding: 9px 18px; }
 }
 
 /* ════════════════════════════════════════════════════════════════
@@ -478,7 +538,8 @@
 .scr-world .mobile-sheet .ledger-rows { flex: 1; min-height: 0; overflow-y: auto; }
 .scr-world .mobile-sheet-endday { display: block; width: 100%; margin-top: 16px; padding: 15px 0; flex-shrink: 0; }
 
-@media (max-width: 640px) {
+/* 条件は Setup / Chronicle 側のコンパクト指定と同一。片方だけ変えないこと */
+@media (max-width: 640px), (max-height: 560px) and (max-width: 1024px) {
   .scr-world .title,
   .scr-world .topright,
   .scr-world .info,
@@ -491,6 +552,59 @@
   .scr-world .mobile-menu-panel,
   .scr-world .mobile-sheet { display: flex; }
   .scr-world .mobile-sheet-backdrop { display: block; }
+}
+
+/* ── スマホ横持ち（World）──
+   縦持ちのモバイルUI（上バー＋下部シート）をそのまま使い、
+   ・高さを食う縦方向の余白／文字サイズを削る
+   ・横持ちだと左右に来るノッチ／ホームバーを safe-area で避ける
+   の2点だけを足す。 */
+@media (max-height: 560px) and (max-width: 1024px) {
+  .scr-world .mobile-bar {
+    padding: 8px calc(14px + env(safe-area-inset-right)) 0 calc(14px + env(safe-area-inset-left));
+  }
+  .scr-world .mobile-brand { font-size: 13px; }
+  .scr-world .mobile-icon-btn svg { width: 18px; height: 18px; }
+  .scr-world .mobile-menu-panel {
+    top: 46px; left: calc(16px + env(safe-area-inset-left));
+    max-height: calc(100dvh - 60px); overflow-y: auto;
+  }
+  .scr-world .mobile-menu-item { padding: 7px 10px; }
+
+  .scr-world .mobile-foot {
+    padding: 14px calc(24px + env(safe-area-inset-right))
+             calc(4px + env(safe-area-inset-bottom)) calc(24px + env(safe-area-inset-left));
+  }
+  .scr-world .mobile-goal { font-size: 14px; }
+  .scr-world .mobile-handle { padding: 6px 0 2px; }
+  .scr-world .mobile-handle-label { font-size: 12px; padding: 8px 20px; }
+
+  /* シート：高さが無いのでほぼ全面を使い、行間を詰めて表示件数を稼ぐ */
+  .scr-world .mobile-sheet {
+    max-height: 94dvh; border-radius: 14px 14px 0 0;
+    padding: 6px calc(20px + env(safe-area-inset-right))
+             calc(10px + env(safe-area-inset-bottom)) calc(20px + env(safe-area-inset-left));
+  }
+  .scr-world .mobile-sheet-grip { margin-bottom: 8px; }
+  .scr-world .mobile-sheet .ledger-head { padding-bottom: 8px; }
+  .scr-world .mobile-sheet .ledger-row { gap: 12px; padding: 9px 2px; }
+  .scr-world .mobile-sheet .ledger-label { font-size: 14px; }
+  .scr-world .mobile-sheet-endday { margin-top: 10px; padding: 11px 0; }
+
+  .scr-world .hide-hint { bottom: calc(12px + env(safe-area-inset-bottom)); font-size: 10px; padding: 6px 14px; }
+  .scr-world .paused-label { top: 38%; font-size: 13px; }
+}
+
+/* ════════════════════════════════════════════════════════════════
+   END-OF-DAY modal（寸法だけCSS側で持つ。配色はコンポーネントのまま）
+   ════════════════════════════════════════════════════════════════ */
+.end-day-modal { min-width: 380px; max-width: 480px; padding: 40px 48px; background: rgba(30,30,30,0.95); }
+@media (max-width: 640px) {
+  /* min-width:380px は横幅360pxの端末で画面外にはみ出す */
+  .end-day-modal { min-width: 0; width: min(92vw, 420px); padding: 28px 24px; }
+}
+@media (max-height: 560px) and (max-width: 1024px) {
+  .end-day-modal { min-width: 0; width: min(78vw, 420px); padding: 18px 24px; gap: 14px; max-height: 92dvh; overflow-y: auto; }
 }
 
 /* ════════════════════════════════════════════════════════════════
