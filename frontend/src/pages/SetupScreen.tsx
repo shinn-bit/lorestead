@@ -2,15 +2,17 @@ import { useState, useRef, useEffect, useLayoutEffect } from 'react';
 import { useI18n } from '../i18n/I18nContext';
 import { LangToggle } from '../components/LangToggle';
 import { getGoal, setGoal } from '../utils/goalStore';
+import { WORLDS, getLastWorldId, setLastWorldId, type WorldId } from '../utils/worlds';
+import { getStillSrc } from '../utils/stageCalculator';
 import type { View } from '../App';
 import type { I18nKey } from '../i18n/dict';
 
 interface Props {
-  onStartTasks: (labels: string[]) => void;
+  onStartTasks: (labels: string[], worldId: WorldId) => void;
   onNavigate: (view: View) => void;
 }
 
-type WizardView = 'goal' | 'task';
+type WizardView = 'world' | 'goal' | 'task';
 
 const SETUP_SEEN_KEY = 'lorestead_setup_seen';
 
@@ -27,10 +29,26 @@ function loadSetupSeen(): boolean {
 
 interface Geom { top: number; left: number; width: number; height: number; popTop: boolean; }
 
+function WorldThumb({ worldId }: { worldId: WorldId }) {
+  const [failed, setFailed] = useState(false);
+  const src = getStillSrc(worldId, 1);
+  return (
+    <div className="wc-thumb">
+      {src && !failed
+        ? <img src={src} alt="" loading="lazy" onError={() => setFailed(true)} />
+        : <span className="wc-thumb-fallback" />}
+    </div>
+  );
+}
+
 export function SetupScreen({ onStartTasks, onNavigate }: Props) {
   const { t, lang } = useI18n();
 
-  const [view, setView] = useState<WizardView>(() => (getGoal() ? 'task' : 'goal'));
+  // 目標日（初回のみ）→ 世界選択（毎日）→ タスク記入、の順。目標日が設定済みなら世界選択から始まる
+  const [view, setView] = useState<WizardView>(() => (getGoal() ? 'world' : 'goal'));
+  // タスク画面の「目標日」リンクから編集に入った場合は、保存後にタスク画面へ戻す（世界選択はスキップ）
+  const [editingGoal, setEditingGoal] = useState(false);
+  const [selectedWorld, setSelectedWorld] = useState<WorldId>(() => getLastWorldId());
   const [goalDateInput, setGoalDateInput] = useState(() => getGoal()?.date ?? '');
   const [goalLabelInput, setGoalLabelInput] = useState(() => getGoal()?.label ?? '');
   const [tasks, setTasks] = useState<string[]>(['', '', '', '', '']);
@@ -53,14 +71,24 @@ export function SetupScreen({ onStartTasks, onNavigate }: Props) {
   function addTask() { setTasks((p) => [...p, '']); }
   function removeTask(i: number) { setTasks((p) => (p.length <= 1 ? p : p.filter((_, idx) => idx !== i))); }
 
-  function beginTasks() { if (nonEmptyTasks.length > 0) onStartTasks(nonEmptyTasks); }
+  function beginTasks() {
+    if (nonEmptyTasks.length === 0) return;
+    setLastWorldId(selectedWorld);
+    onStartTasks(nonEmptyTasks, selectedWorld);
+  }
 
-  function continueFromGoal() {
-    if (goalDateInput) setGoal(goalDateInput, goalLabelInput);
+  function continueFromWorld() {
     setView('task');
   }
 
+  function continueFromGoal() {
+    if (goalDateInput) setGoal(goalDateInput, goalLabelInput);
+    setView(editingGoal ? 'task' : 'world');
+    setEditingGoal(false);
+  }
+
   function openGoalEditor() {
+    setEditingGoal(true);
     setGoalDateInput(getGoal()?.date ?? '');
     setGoalLabelInput(getGoal()?.label ?? '');
     setView('goal');
@@ -135,6 +163,32 @@ export function SetupScreen({ onStartTasks, onNavigate }: Props) {
       <main className="page">
         <span className="corner tl" /><span className="corner tr" />
         <span className="corner bl" /><span className="corner br" />
+
+        {/* VIEW · WORLD (first step, every day) */}
+        {view === 'world' && (
+          <section className="view active">
+            <div className="eyebrow">{t('world_step_eyebrow')}</div>
+            <h1>{t('world_step_h')}</h1>
+            <p className="sub">{t('world_step_p')}</p>
+            <div className="divider"><span className="line" /><span className="mark">✦</span><span className="line r" /></div>
+
+            <div className="world-choices">
+              {WORLDS.map((w) => (
+                <button
+                  key={w.id}
+                  className={`world-choice ${selectedWorld === w.id ? 'selected' : ''}`}
+                  onClick={() => setSelectedWorld(w.id)}
+                >
+                  <WorldThumb worldId={w.id} />
+                  <div className="wc-name">{t(w.nameKey)}</div>
+                  <div className="wc-tagline">{t(w.taglineKey)}</div>
+                </button>
+              ))}
+            </div>
+
+            <button className="begin" onClick={continueFromWorld}>{t('world_continue')}</button>
+          </section>
+        )}
 
         {/* VIEW · GOAL DATE (optional, first-run) */}
         {view === 'goal' && (

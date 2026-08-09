@@ -30,10 +30,8 @@ export function EndDayModal({ tasks, currentStage, isCompleted, onFinalize, onCa
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm">
-      <div
-        className="flex flex-col gap-6 rounded-[2rem] border border-[#d4af37]/40 shadow-2xl"
-        style={{ background: 'rgba(30,30,30,0.95)', padding: '40px 48px', minWidth: 380, maxWidth: 480 }}
-      >
+      {/* 寸法（幅・余白）は .end-day-modal 側。狭い画面・低い画面で詰めるため */}
+      <div className="end-day-modal flex flex-col gap-6 rounded-[2rem] border border-[#d4af37]/40 shadow-2xl">
 
         {/* ── Confirm ── */}
         {phase === 'confirm' && (

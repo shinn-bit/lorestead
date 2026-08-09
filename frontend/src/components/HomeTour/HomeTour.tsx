@@ -1,5 +1,6 @@
 import { useState, useEffect, useLayoutEffect, type RefObject } from 'react';
 import { useI18n } from '../../i18n/I18nContext';
+import { isCompactLayout } from '../../utils/breakpoints';
 import type { I18nKey } from '../../i18n/dict';
 
 const TOUR_SEEN_KEY = 'lorestead_home_tour_seen';
@@ -24,7 +25,8 @@ interface Props {
 /**
  * ホーム画面の使い方ツアー。
  * デスクトップ：サブ画面ボタン → 表示を隠すボタンの2ステップ。
- * モバイル（640px以下）：タスクハンドル → メニューの2ステップ（対象要素が異なるため別系統）。
+ * モバイル（コンパクト表示＝スマホ縦・横）：タスクハンドル → メニューの2ステップ
+ * （対象要素が異なるため別系統。判定は utils/breakpoints の isCompactLayout）。
  * 初回はホーム到達時に自動表示、以後は「使い方」ボタンから再表示できる。
  */
 export function HomeTour({ open, onClose, subscreenRef, hideBtnRef, mobileHandleRef, mobileMenuRef }: Props) {
@@ -46,13 +48,16 @@ export function HomeTour({ open, onClose, subscreenRef, hideBtnRef, mobileHandle
   useEffect(() => {
     if (open) {
       setIdx(0);
-      setIsMobile(window.matchMedia('(max-width: 640px)').matches);
+      setIsMobile(isCompactLayout());
     }
   }, [open]);
 
   useLayoutEffect(() => {
     if (!open) return;
     const measure = () => {
+      // 表示中に画面を回転させるとモバイル⇔デスクトップが入れ替わり、
+      // 消えた側の要素（display:none）を掴んで枠が左上に飛ぶので測り直す前に更新する
+      setIsMobile(isCompactLayout());
       const el = STEPS[idx].ref.current;
       if (!el) return;
       const r = el.getBoundingClientRect();
@@ -66,8 +71,9 @@ export function HomeTour({ open, onClose, subscreenRef, hideBtnRef, mobileHandle
     const id = requestAnimationFrame(measure);
     window.addEventListener('resize', measure);
     return () => { cancelAnimationFrame(id); window.removeEventListener('resize', measure); };
+    // isMobile を deps に含める：回転で切り替わった直後に、新しい対象を測り直すため
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, idx]);
+  }, [open, idx, isMobile]);
 
   function close() {
     try { localStorage.setItem(TOUR_SEEN_KEY, '1'); } catch { /* ignore */ }

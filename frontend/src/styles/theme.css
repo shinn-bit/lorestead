@@ -17,15 +17,20 @@
   --p-ember-deep:#9c3d14;
   --p-gold:    #a37e2c;
   --p-rule:    rgba(58,42,23,0.28);
-  /* Hearthlight */
+  /* Hearthlight (town) */
   --h-bg:      #15100b;
   --h-ink:     #f7ecd8;
-  --h-ink-dim: rgba(247,236,216,0.5);
+  --h-ink-rgb: 247,236,216;
+  --h-ink-dim: rgba(var(--h-ink-rgb),0.5);
   --h-ember:   #f0a44a;
   --h-ember-hi:#f3b659;
   --h-ember-lo:#e08327;
+  --h-ember-rgb: 240,164,74;
+  --h-glow-rgb:  240,140,55;
   --h-gold:    #ecb44e;
+  --h-gold-rgb:  236,180,78;
   --h-panel:   rgba(40,26,15,0.5);
+  --h-panel-rgb: 20,13,8;
   /* Japanese serif */
   --jp:        'Shippori Mincho','Hiragino Mincho ProN','Yu Mincho',serif;
 }
@@ -139,6 +144,22 @@
 }
 .scr-setup .custom-row input:focus { border-color: var(--p-gold); }
 .scr-setup .custom-row .unit { font-size: 16px; font-style: italic; color: var(--p-ink-faint); }
+
+/* world selection cards */
+.scr-setup .world-choices { display: flex; gap: 16px; margin-bottom: 4px; }
+.scr-setup .world-choice {
+  flex: 1; min-width: 0; display: flex; flex-direction: column; text-align: left; cursor: pointer;
+  background: rgba(255,252,242,0.5); border: 1.5px solid var(--p-rule); border-radius: 14px;
+  padding: 10px; transition: all 0.2s;
+}
+.scr-setup .world-choice:hover { border-color: var(--p-gold); }
+.scr-setup .world-choice.selected { border-color: var(--p-ember-deep); background: rgba(255,252,242,0.85); box-shadow: 0 6px 20px -8px rgba(156,61,20,0.35); }
+.scr-setup .wc-thumb { width: 100%; aspect-ratio: 1; border-radius: 9px; overflow: hidden; background: #15100b; margin-bottom: 10px; }
+.scr-setup .wc-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.scr-setup .wc-thumb-fallback { display: flex; align-items: center; justify-content: center; width: 100%; height: 100%; font-family: 'Cinzel', serif; font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; color: rgba(245,230,211,0.4); text-align: center; padding: 4px; }
+.scr-setup .wc-name { font-family: 'Cinzel', serif; font-size: 15px; letter-spacing: 0.04em; color: var(--p-ink); font-weight: 600; }
+.scr-setup .world-choice.selected .wc-name { color: var(--p-ember-deep); }
+.scr-setup .wc-tagline { font-size: 13px; font-style: italic; color: var(--p-ink-soft); margin-top: 3px; line-height: 1.35; }
 
 .scr-setup .tasklist { display: flex; flex-direction: column; gap: 10px; }
 .scr-setup .task-row { display: flex; align-items: center; gap: 12px; }
@@ -258,7 +279,15 @@
 .scr-chronicle .cal-legend .cal-dot.partial { background: var(--p-gold); }
 .scr-chronicle .cal-legend .cal-dot.blank { background: var(--p-ink-faint); }
 
-@media (max-width: 640px) {
+/* ── コンパクト表示の条件（Setup / Chronicle / World 共通） ──
+   `max-width: 640px`（スマホ縦）に加えて、`max-height: 560px` かつ
+   `max-width: 1024px`（＝スマホ横持ち）でも同じモバイルUIを使う。
+   デスクトップ用のレイアウトは絶対配置＋大きな文字で「画面の高さが700px前後
+   ある」ことを前提にしているため、横持ち（高さ400px前後）だと見出し・時計・
+   タスク台帳・End Todayが互いに重なって読めなくなる。
+   タブレット横（iPad 1024×768など）は高さが足りるので巻き込まれない。
+   条件を足すときは World 側の同じ条件のブロックと必ず揃えること。 */
+@media (max-width: 640px), (max-height: 560px) and (max-width: 1024px) {
   /* topbar: 詰めてアイコンナビに（Setup/Chronicle共通） */
   .parchment .topbar { padding: 14px 16px; }
   .parchment .wordmark { font-size: 17px; letter-spacing: 0.18em; }
@@ -267,6 +296,27 @@
   .parchment .nav a, .parchment .nav button { padding: 8px 12px; font-size: 0; letter-spacing: 0; gap: 0; }
   .parchment .nav svg { width: 15px; height: 15px; }
   .parchment .howlink { font-size: 11px; padding: 6px 2px; }
+
+  /* Setup: topbar を非固定にして本文と一緒に流す。
+     デスクトップは .scr-setup が flex + align-items:center で、topbar は
+     absolute・page は margin-top:96px でバーを避ける、という構成。これは
+     ページが画面に収まる前提の作りで、スマホ幅（世界カードが縦並びになり
+     縦に伸びる）だと中央揃えが上方向にもはみ出し、本文がバーの下に潜り込む。
+     Chronicle と同じく topbar を position:relative で流し込めば、バーが
+     何行になっても本文が必ずその下に来る。 */
+  .scr-setup { display: block; }
+  .scr-setup .topbar { position: relative; flex-wrap: wrap; row-gap: 8px; }
+  .scr-setup .page { width: 92vw; margin: 8px auto 40px; padding: 34px 22px 30px; }
+  .scr-setup .eyebrow { font-size: 10px; letter-spacing: 0.3em; margin-bottom: 12px; }
+  .scr-setup h1 { font-size: 24px; }
+  .scr-setup .sub { font-size: 15px; }
+  .scr-setup .divider { margin: 20px 0 22px; }
+
+  /* 世界選択：横3枚だと1枚が細くなりすぎるので縦積みにする。
+     flex-direction を変えると .world-choice の flex:1 が主軸＝縦方向の
+     指定（flex-basis:0）になりカードが潰れるため、あわせて解除する。 */
+  .scr-setup .world-choices { flex-direction: column; gap: 12px; }
+  .scr-setup .world-choice { flex: 0 0 auto; }
 
   /* Chronicle: 見出し・カレンダーの文字と余白を縮める */
   .scr-chronicle .header { padding: 18px 16px 4px; }
@@ -282,6 +332,55 @@
   .scr-chronicle .cal-cell { padding: 4px; }
 }
 
+/* ── スマホ横持ち（Setup / Chronicle）──
+   上のコンパクト指定をベースに、横持ち特有の事情だけを上書きする。
+   ・横幅は十分にあるので、縦積みにしたものは横並びへ戻す
+   ・足りないのは高さだけなので、縦方向の余白・字送りをさらに削る */
+@media (max-height: 560px) and (max-width: 1024px) {
+  .parchment .topbar { padding: 10px 16px; }
+
+  .scr-setup .page { width: min(92vw, 620px); margin: 4px auto 28px; padding: 24px 30px 26px; }
+  .scr-setup .eyebrow { margin-bottom: 8px; }
+  .scr-setup h1 { font-size: 21px; }
+  .scr-setup .sub { font-size: 14px; margin-top: 6px; }
+  .scr-setup .divider { margin: 12px 0 14px; }
+
+  /* 世界カードは横並びに戻す（縦積みだと横持ちの高さに1枚も収まらない）。
+     640px以下の指定で flex:0 0 auto にしているので、それも戻す。 */
+  .scr-setup .world-choices { flex-direction: row; gap: 12px; }
+  .scr-setup .world-choice { flex: 1 1 0; }
+  /* 正方形サムネは高さを食いすぎるので横長に切り替える */
+  .scr-setup .wc-thumb { aspect-ratio: 16 / 9; margin-bottom: 7px; }
+  .scr-setup .wc-name { font-size: 13px; }
+  .scr-setup .wc-tagline { font-size: 12px; margin-top: 2px; }
+
+  .scr-setup .custom-row { margin-top: 12px; }
+  .scr-setup .custom-row input { padding: 8px 12px; font-size: 15px; }
+  .scr-setup .tasklist { gap: 4px; }
+  .scr-setup .task-row input { font-size: 15px; padding: 6px 4px; }
+  .scr-setup .begin { margin-top: 16px; padding: 12px 0; font-size: 13px; }
+  .scr-setup .backlink { margin-bottom: 8px; }
+
+  .scr-chronicle .header { padding: 10px 16px 0; }
+  .scr-chronicle .header h1 { font-size: 20px; margin-top: 6px; }
+  .scr-chronicle .header .sub { font-size: 13px; margin-top: 4px; }
+  .scr-chronicle .divider { margin: 10px 0 2px; }
+  .scr-chronicle .cal-wrap { padding: 4px 16px 18px; }
+  .scr-chronicle .cal { width: min(94vw, 720px); padding: 12px 12px 14px; }
+  .scr-chronicle .cal-head { margin-bottom: 10px; }
+  /* 縦長セル（0.86）のままだと6週分でスクロールが長くなりすぎる */
+  .scr-chronicle .cal-cell { aspect-ratio: 1.15; }
+  .scr-chronicle .cal-legend { margin-top: 10px; }
+
+  /* ツアー吹き出し：上下40pxに固定配置されるので、縮めないと
+     スポットライト（ハイライト対象）を覆ってしまう */
+  .tour-pop { width: min(84vw, 460px); padding: 14px 20px 12px; }
+  .tour-text { font-size: 14px; line-height: 1.45; }
+  .tour-step { margin-bottom: 6px; }
+  .tour-actions { margin-top: 10px; }
+  .tour-next { padding: 9px 18px; }
+}
+
 /* ════════════════════════════════════════════════════════════════
    WORLD / Home  (.scr-world)  — Hearthlight
    ════════════════════════════════════════════════════════════════ */
@@ -289,13 +388,13 @@
 @keyframes pausedPulse { 0%,100% { opacity: 0.55; } 50% { opacity: 0.28; } }
 @keyframes emberFlicker { 0%,100% { opacity: 0.85; } 45% { opacity: 1; } 70% { opacity: 0.78; } }
 
-.scr-world .world-glow { position: absolute; inset: 0; pointer-events: none; z-index: 1; background: radial-gradient(60% 45% at 52% 92%, rgba(240,140,55,0.20), transparent 62%); animation: emberFlicker 5s ease-in-out infinite; transition: opacity 0.6s ease; }
+.scr-world .world-glow { position: absolute; inset: 0; pointer-events: none; z-index: 1; background: radial-gradient(60% 45% at 52% 92%, rgba(var(--h-glow-rgb),0.20), transparent 62%); animation: emberFlicker 5s ease-in-out infinite; transition: opacity 0.6s ease; }
 .scr-world.inactive .world-glow { opacity: 0.35; }
-.scr-world .world-base { position: absolute; inset: 0; pointer-events: none; z-index: 1; background: linear-gradient(0deg, rgba(18,11,6,0.55) 0%, transparent 24%); }
-.scr-world .paused-label { position: absolute; top: 44%; left: 50%; transform: translate(-50%,-50%); z-index: 2; font-family: 'Cinzel', serif; font-size: 15px; letter-spacing: 0.4em; color: rgba(240,164,74,0.6); text-transform: uppercase; animation: pausedPulse 2.4s ease-in-out infinite; pointer-events: none; }
+.scr-world .world-base { position: absolute; inset: 0; pointer-events: none; z-index: 1; background: linear-gradient(0deg, rgba(var(--h-panel-rgb),0.55) 0%, transparent 24%); }
+.scr-world .paused-label { position: absolute; top: 44%; left: 50%; transform: translate(-50%,-50%); z-index: 2; font-family: 'Cinzel', serif; font-size: 15px; letter-spacing: 0.4em; color: rgba(var(--h-ember-rgb),0.6); text-transform: uppercase; animation: pausedPulse 2.4s ease-in-out infinite; pointer-events: none; }
 
 .scr-world .title { position: absolute; top: 24px; left: 40px; z-index: 998; pointer-events: none; }
-.scr-world .title h1 { font-size: 2.6rem; letter-spacing: 0.22em; color: var(--h-gold); font-weight: 300; text-shadow: 0 2px 10px rgba(0,0,0,0.85), 0 0 26px rgba(236,160,60,0.45); }
+.scr-world .title h1 { font-size: 2.6rem; letter-spacing: 0.22em; color: var(--h-gold); font-weight: 300; text-shadow: 0 2px 10px rgba(0,0,0,0.85), 0 0 26px rgba(var(--h-gold-rgb),0.45); }
 
 /* ── top chrome: quiet text links, no capsules ── */
 .scr-world .topright { position: absolute; top: 34px; right: 40px; z-index: 999; display: flex; align-items: center; gap: 26px; }
@@ -304,7 +403,7 @@
   position: relative; display: flex; align-items: center; padding: 4px 0;
   font-size: 12px; font-family: 'Cinzel', serif; letter-spacing: 0.22em; text-transform: uppercase;
   cursor: pointer; transition: color 0.2s; background: none; border: none;
-  color: rgba(247,236,216,0.45); text-decoration: none;
+  color: rgba(var(--h-ink-rgb),0.45); text-decoration: none;
 }
 .scr-world .nav button::after, .scr-world .nav a::after {
   content: ''; position: absolute; left: 0; right: 0; bottom: -3px; height: 1px;
@@ -317,7 +416,7 @@
 .scr-world .langtoggle button {
   background: none; border: none; cursor: pointer; padding: 4px 0;
   font-family: 'Cinzel', var(--jp); font-size: 11px; letter-spacing: 0.12em;
-  color: rgba(247,236,216,0.4); transition: color 0.2s;
+  color: rgba(var(--h-ink-rgb),0.4); transition: color 0.2s;
 }
 .scr-world .langtoggle button.on { color: var(--h-ember); }
 .scr-world .langtoggle button:not(.on):hover { color: var(--h-ink); }
@@ -326,20 +425,20 @@
 .scr-world .info { position: absolute; top: 104px; left: 40px; z-index: 10; display: flex; flex-direction: column; gap: 18px; width: 320px; }
 .scr-world .big-clock {
   font-family: 'Cinzel', serif; font-weight: 300; font-size: 8.2rem; letter-spacing: 0.01em;
-  color: var(--h-gold); text-shadow: 0 2px 10px rgba(0,0,0,0.85), 0 4px 24px rgba(0,0,0,0.6), 0 0 30px rgba(236,160,60,0.45);
+  color: var(--h-gold); text-shadow: 0 2px 10px rgba(0,0,0,0.85), 0 4px 24px rgba(0,0,0,0.6), 0 0 30px rgba(var(--h-gold-rgb),0.45);
   line-height: 1; width: 100%;
 }
-.scr-world .info-head { display: flex; justify-content: space-between; align-items: baseline; gap: 16px; font-size: 11px; letter-spacing: 0.24em; font-weight: 400; color: rgba(247,236,216,0.55); text-transform: uppercase; }
+.scr-world .info-head { display: flex; justify-content: space-between; align-items: baseline; gap: 16px; font-size: 11px; letter-spacing: 0.24em; font-weight: 400; color: rgba(var(--h-ink-rgb),0.55); text-transform: uppercase; }
 .scr-world .info-head span { white-space: nowrap; }
 .scr-world .info-head .phase { color: var(--h-ember); }
-.scr-world .progress { height: 2px; width: 100%; background: rgba(236,180,78,0.16); border-radius: 1px; }
+.scr-world .progress { height: 2px; width: 100%; background: rgba(var(--h-gold-rgb),0.16); border-radius: 1px; }
 .scr-world .progress-fill { height: 100%; background: linear-gradient(90deg, var(--h-ember-lo), var(--h-ember-hi)); transition: width 1s; }
 .scr-world .goal-line { font-family: 'Cinzel', serif; font-size: 1.55rem; font-weight: 300; letter-spacing: 0.04em; color: var(--h-ink); text-shadow: 0 2px 8px rgba(0,0,0,0.85), 0 4px 20px rgba(0,0,0,0.5); line-height: 1.25; }
-.scr-world .studied-line { font-family: 'Cinzel', serif; font-size: 11px; letter-spacing: 0.2em; color: rgba(247,236,216,0.45); text-transform: uppercase; }
+.scr-world .studied-line { font-family: 'Cinzel', serif; font-size: 11px; letter-spacing: 0.2em; color: rgba(var(--h-ink-rgb),0.45); text-transform: uppercase; }
 .scr-world .view-controls { margin-top: 8px; align-self: flex-start; display: flex; flex-wrap: wrap; gap: 22px; }
 .scr-world .view-btn {
   display: flex; align-items: center; gap: 8px; background: none; border: none;
-  color: rgba(247,236,216,0.42); font-family: 'Cinzel', serif; font-size: 11px; letter-spacing: 0.18em;
+  color: rgba(var(--h-ink-rgb),0.42); font-family: 'Cinzel', serif; font-size: 11px; letter-spacing: 0.18em;
   text-transform: uppercase; padding: 4px 0; cursor: pointer; transition: color 0.2s;
 }
 .scr-world .view-btn:hover { color: var(--h-ink); }
@@ -348,49 +447,75 @@
 .scr-world .view-btn-icon-only { padding: 4px 6px; }
 .scr-world .view-btn-icon-only svg { width: 15px; height: 15px; }
 
-/* ── task ledger: hairline rows, diamond marks ── */
-.scr-world .ledger { position: absolute; top: 104px; right: 40px; z-index: 10; width: 280px; display: flex; flex-direction: column; max-height: calc(100dvh - 230px); }
+/* ── task ledger: same thin-frame plate as the end-of-day button ── */
+.scr-world .ledger {
+  position: absolute; top: 104px; right: 40px; z-index: 10; width: 280px; box-sizing: border-box;
+  display: flex; flex-direction: column; max-height: calc(100dvh - 230px);
+  padding: 18px 20px; border-radius: 2px;
+  background: rgba(var(--h-panel-rgb),0.35); border: 1px solid rgba(var(--h-gold-rgb),0.5);
+}
 .scr-world .ledger-head {
   display: flex; justify-content: space-between; align-items: baseline;
   font-family: 'Cinzel', serif; font-size: 11px; letter-spacing: 0.24em; text-transform: uppercase;
-  color: rgba(247,236,216,0.55); padding-bottom: 12px; border-bottom: 1px solid rgba(236,180,78,0.28);
+  color: rgba(var(--h-ink-rgb),0.55); padding-bottom: 12px; border-bottom: 1px solid rgba(var(--h-gold-rgb),0.28);
 }
 .scr-world .ledger-count { color: var(--h-ember); letter-spacing: 0.1em; }
 .scr-world .ledger-rows { overflow-y: auto; display: flex; flex-direction: column; }
 .scr-world .ledger-row {
   display: flex; align-items: center; gap: 15px; width: 100%; text-align: left;
-  background: none; border: none; border-bottom: 1px solid rgba(236,180,78,0.13);
+  background: none; border: none; border-bottom: 1px solid rgba(var(--h-gold-rgb),0.13);
   padding: 14px 2px; cursor: pointer;
 }
 .scr-world .ledger-mark {
   width: 10px; height: 10px; flex-shrink: 0; transform: rotate(45deg);
-  border: 1px solid rgba(247,236,216,0.45); transition: all 0.25s ease;
+  border: 1px solid rgba(var(--h-ink-rgb),0.45); transition: all 0.25s ease;
 }
 .scr-world .ledger-row:hover .ledger-mark { border-color: var(--h-ember); }
-.scr-world .ledger-row.done .ledger-mark { background: var(--h-ember); border-color: var(--h-ember); box-shadow: 0 0 9px rgba(240,164,74,0.55); }
+.scr-world .ledger-row.done .ledger-mark { background: var(--h-ember); border-color: var(--h-ember); box-shadow: 0 0 9px rgba(var(--h-ember-rgb),0.55); }
 .scr-world .ledger-label {
   font-family: 'EB Garamond', var(--jp), serif; font-size: 15.5px; line-height: 1.35;
-  color: rgba(247,236,216,0.88); transition: color 0.25s ease;
+  color: rgba(var(--h-ink-rgb),0.88); transition: color 0.25s ease;
 }
-.scr-world .ledger-row.done .ledger-label { color: rgba(247,236,216,0.35); text-decoration: line-through; text-decoration-color: rgba(240,164,74,0.45); text-decoration-thickness: 1px; }
+.scr-world .ledger-row.done .ledger-label { color: rgba(var(--h-ink-rgb),0.35); text-decoration: line-through; text-decoration-color: rgba(var(--h-ember-rgb),0.45); text-decoration-thickness: 1px; }
 
 /* how-to-use link (hearthlight) */
-.scr-world .howlink { background: transparent; border: none; cursor: pointer; font-family: 'Cinzel', serif; font-size: 12px; letter-spacing: 0.14em; text-transform: uppercase; color: rgba(247,236,216,0.5); transition: color 0.2s; padding: 7px 4px; white-space: nowrap; }
+.scr-world .howlink { background: transparent; border: none; cursor: pointer; font-family: 'Cinzel', serif; font-size: 12px; letter-spacing: 0.14em; text-transform: uppercase; color: rgba(var(--h-ink-rgb),0.5); transition: color 0.2s; padding: 7px 4px; white-space: nowrap; }
 .scr-world .howlink:hover { color: var(--h-ink); }
+
+/* debug event-preview banner (only shown when launched from /debug Play) */
+.scr-world .debug-preview-bar {
+  position: absolute; top: 14px; left: 50%; transform: translateX(-50%); z-index: 1000;
+  display: flex; align-items: center; gap: 12px; padding: 8px 16px; border-radius: 9999px;
+  background: rgba(10,6,3,0.72); border: 1px solid rgba(255,60,60,0.35);
+  -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px);
+  font-family: 'Cinzel', monospace; font-size: 11px; letter-spacing: 0.12em; color: rgba(255,255,255,0.85);
+}
+.scr-world .debug-preview-bar .dpb-dot { width: 7px; height: 7px; border-radius: 50%; background: #ff3c3c; animation: pausedPulse 1.6s ease-in-out infinite; }
+.scr-world .debug-preview-bar .dpb-label { text-transform: uppercase; color: #ff9a9a; }
+.scr-world .debug-preview-bar .dpb-link {
+  background: transparent; border: none; cursor: pointer; padding: 4px 6px;
+  font-family: 'Cinzel', monospace; font-size: 11px; letter-spacing: 0.08em; color: rgba(255,255,255,0.6); transition: color 0.2s;
+}
+.scr-world .debug-preview-bar .dpb-link:hover { color: #fff; }
+.scr-world .debug-preview-bar .dpb-close {
+  background: transparent; border: none; cursor: pointer; padding: 2px 4px 4px; margin-left: 2px;
+  font-family: monospace; font-size: 16px; line-height: 1; color: rgba(255,255,255,0.5); transition: color 0.2s;
+}
+.scr-world .debug-preview-bar .dpb-close:hover { color: #fff; }
 
 /* hide-UI mode */
 @keyframes hideHintFade { 0%, 60% { opacity: 1; } 100% { opacity: 0; } }
 .scr-world .hide-hint {
   position: absolute; bottom: 28px; left: 50%; transform: translateX(-50%); z-index: 5;
   font-family: 'Cinzel', serif; font-size: 11px; letter-spacing: 0.18em; text-transform: uppercase;
-  color: rgba(247,236,216,0.55); background: rgba(20,13,8,0.5); padding: 8px 18px; border-radius: 9999px;
-  -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); border: 1px solid rgba(240,164,74,0.16);
+  color: rgba(var(--h-ink-rgb),0.55); background: rgba(var(--h-panel-rgb),0.5); padding: 8px 18px; border-radius: 9999px;
+  -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); border: 1px solid rgba(var(--h-ember-rgb),0.16);
   animation: hideHintFade 4s ease forwards; pointer-events: none;
 }
 
 /* home tour: sub-screen preview mock */
 .home-tour-preview { position: fixed; right: 24px; z-index: 1101; display: flex; flex-direction: column; align-items: flex-end; gap: 8px; animation: viewIn 0.42s cubic-bezier(0.2,0.8,0.2,1); }
-.home-tour-preview .htp-label { font-family: 'Cinzel', serif; font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--h-ember); background: rgba(20,13,8,0.75); padding: 6px 14px; border-radius: 9999px; border: 1px solid rgba(240,164,74,0.3); }
+.home-tour-preview .htp-label { font-family: 'Cinzel', serif; font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--h-ember); background: rgba(var(--h-panel-rgb),0.75); padding: 6px 14px; border-radius: 9999px; border: 1px solid rgba(var(--h-ember-rgb),0.3); }
 .home-tour-preview .htp-mock { width: 220px; border-radius: 16px; overflow: hidden; background: #15171a; border: 1px solid rgba(212,175,55,0.35); box-shadow: 0 20px 60px rgba(0,0,0,0.7); }
 .home-tour-preview .htp-video { width: 100%; aspect-ratio: 16/9; background: linear-gradient(135deg, #2a2014, #15100b); }
 .home-tour-preview .htp-row { display: flex; align-items: center; justify-content: space-between; padding: 8px 12px; gap: 8px; }
@@ -402,12 +527,12 @@
 .scr-world .btn-endday {
   display: inline-flex; align-items: center; justify-content: center;
   padding: 16px 46px; border-radius: 2px; cursor: pointer;
-  background: rgba(20,13,8,0.35); border: 1px solid rgba(236,180,78,0.5);
+  background: rgba(var(--h-panel-rgb),0.35); border: 1px solid rgba(var(--h-gold-rgb),0.5);
   font-family: 'Cinzel', serif; font-size: 13px; letter-spacing: 0.3em; text-indent: 0.3em;
   text-transform: uppercase; color: var(--h-ink);
   transition: background 0.25s ease, border-color 0.25s ease;
 }
-.scr-world .btn-endday:hover { background: rgba(240,164,74,0.14); border-color: rgba(236,180,78,0.85); }
+.scr-world .btn-endday:hover { background: rgba(var(--h-ember-rgb),0.14); border-color: rgba(var(--h-gold-rgb),0.85); }
 .scr-world .btn-endday:focus-visible { outline: 1px solid var(--h-ember); outline-offset: 3px; }
 
 /* ── Mobile compact chrome: bottom-sheet layout (hidden unless <=640px) ── */
@@ -419,29 +544,29 @@
 .scr-world .mobile-sheet { display: none; }
 
 .scr-world .mobile-bar { align-items: center; justify-content: space-between; padding: 16px 14px 0; position: relative; z-index: 998; }
-.scr-world .mobile-icon-btn { background: none; border: none; color: rgba(247,236,216,0.7); padding: 6px; cursor: pointer; }
+.scr-world .mobile-icon-btn { background: none; border: none; color: rgba(var(--h-ink-rgb),0.7); padding: 6px; cursor: pointer; }
 .scr-world .mobile-icon-btn svg { width: 20px; height: 20px; display: block; }
 .scr-world .mobile-brand { font-family: 'Cinzel', serif; font-size: 15px; letter-spacing: 0.26em; text-indent: 0.26em; color: var(--h-gold); text-shadow: 0 2px 10px rgba(0,0,0,0.85); }
 
 .scr-world .mobile-menu-backdrop { position: fixed; inset: 0; z-index: 996; background: transparent; }
 .scr-world .mobile-menu-panel {
   position: fixed; top: 58px; left: 16px; z-index: 997; flex-direction: column; align-items: flex-start; gap: 4px;
-  background: rgba(20,13,8,0.94); border: 1px solid rgba(236,180,78,0.3); border-radius: 12px; padding: 10px;
+  background: rgba(var(--h-panel-rgb),0.94); border: 1px solid rgba(var(--h-gold-rgb),0.3); border-radius: 12px; padding: 10px;
   box-shadow: 0 20px 50px rgba(0,0,0,0.6); -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px);
 }
 .scr-world .mobile-menu-panel .langtoggle { margin-bottom: 4px; }
 .scr-world .mobile-menu-item {
   background: none; border: none; cursor: pointer; width: 100%; text-align: left; padding: 9px 10px; border-radius: 8px;
-  font-family: 'Cinzel', serif; font-size: 12px; letter-spacing: 0.12em; text-transform: uppercase; color: rgba(247,236,216,0.75); white-space: nowrap;
+  font-family: 'Cinzel', serif; font-size: 12px; letter-spacing: 0.12em; text-transform: uppercase; color: rgba(var(--h-ink-rgb),0.75); white-space: nowrap;
 }
-.scr-world .mobile-menu-item:hover { background: rgba(240,164,74,0.12); color: var(--h-ink); }
+.scr-world .mobile-menu-item:hover { background: rgba(var(--h-ember-rgb),0.12); color: var(--h-ink); }
 
 /* bottom cluster: goal countdown + sheet handle */
 .scr-world .mobile-foot {
   position: fixed; left: 0; right: 0; bottom: 0; z-index: 15;
   flex-direction: column; align-items: center; gap: 2px;
   padding: 26px 24px calc(8px + env(safe-area-inset-bottom));
-  background: linear-gradient(0deg, rgba(10,7,4,0.88), rgba(10,7,4,0.4) 68%, transparent);
+  background: linear-gradient(0deg, rgba(var(--h-panel-rgb),0.88), rgba(var(--h-panel-rgb),0.4) 68%, transparent);
   pointer-events: none;
 }
 .scr-world .mobile-goal {
@@ -453,11 +578,11 @@
   display: flex; align-items: center; gap: 14px; width: 100%; justify-content: center; padding: 12px 0 6px;
   font-family: 'Cinzel', serif; font-size: 13px; letter-spacing: 0.16em; text-transform: uppercase;
 }
-.scr-world .mobile-handle-rule { flex: 1; max-width: 64px; height: 1px; background: linear-gradient(90deg, transparent, rgba(236,180,78,0.5)); }
-.scr-world .mobile-handle-rule:last-child { background: linear-gradient(270deg, transparent, rgba(236,180,78,0.5)); }
+.scr-world .mobile-handle-rule { flex: 1; max-width: 64px; height: 1px; background: linear-gradient(90deg, transparent, rgba(var(--h-gold-rgb),0.5)); }
+.scr-world .mobile-handle-rule:last-child { background: linear-gradient(270deg, transparent, rgba(var(--h-gold-rgb),0.5)); }
 .scr-world .mobile-handle-label {
   white-space: nowrap; display: inline-flex; align-items: center; gap: 9px;
-  color: var(--h-ink); background: rgba(20,13,8,0.6); border: 1px solid rgba(236,180,78,0.55);
+  color: var(--h-ink); background: rgba(var(--h-panel-rgb),0.6); border: 1px solid rgba(var(--h-gold-rgb),0.55);
   border-radius: 9999px; padding: 13px 26px;
   box-shadow: 0 6px 22px rgba(0,0,0,0.45);
 }
@@ -465,20 +590,21 @@
 
 /* bottom sheet: tasks + end-today */
 @keyframes sheetUp { from { transform: translateY(28px); opacity: 0; } to { transform: none; opacity: 1; } }
-.scr-world .mobile-sheet-backdrop { position: fixed; inset: 0; z-index: 20; background: rgba(8,5,3,0.55); }
+.scr-world .mobile-sheet-backdrop { position: fixed; inset: 0; z-index: 20; background: rgba(var(--h-panel-rgb),0.55); }
 .scr-world .mobile-sheet {
   position: fixed; left: 0; right: 0; bottom: 0; z-index: 21;
   flex-direction: column; max-height: 72dvh;
   padding: 10px 20px calc(18px + env(safe-area-inset-bottom));
-  background: rgba(21,14,9,0.97); border-top: 1px solid rgba(236,180,78,0.3);
+  background: rgba(var(--h-panel-rgb),0.97); border-top: 1px solid rgba(var(--h-gold-rgb),0.3);
   border-radius: 18px 18px 0 0; box-shadow: 0 -18px 50px rgba(0,0,0,0.6);
   animation: sheetUp 0.28s cubic-bezier(0.2,0.8,0.2,1);
 }
-.scr-world .mobile-sheet-grip { align-self: center; width: 44px; height: 4px; border-radius: 2px; background: rgba(247,236,216,0.25); border: none; cursor: pointer; margin-bottom: 14px; padding: 0; flex-shrink: 0; }
+.scr-world .mobile-sheet-grip { align-self: center; width: 44px; height: 4px; border-radius: 2px; background: rgba(var(--h-ink-rgb),0.25); border: none; cursor: pointer; margin-bottom: 14px; padding: 0; flex-shrink: 0; }
 .scr-world .mobile-sheet .ledger-rows { flex: 1; min-height: 0; overflow-y: auto; }
 .scr-world .mobile-sheet-endday { display: block; width: 100%; margin-top: 16px; padding: 15px 0; flex-shrink: 0; }
 
-@media (max-width: 640px) {
+/* 条件は Setup / Chronicle 側のコンパクト指定と同一。片方だけ変えないこと */
+@media (max-width: 640px), (max-height: 560px) and (max-width: 1024px) {
   .scr-world .title,
   .scr-world .topright,
   .scr-world .info,
@@ -493,15 +619,238 @@
   .scr-world .mobile-sheet-backdrop { display: block; }
 }
 
+/* ── スマホ横持ち（World）──
+   縦持ちのモバイルUI（上バー＋下部シート）をそのまま使い、
+   ・高さを食う縦方向の余白／文字サイズを削る
+   ・横持ちだと左右に来るノッチ／ホームバーを safe-area で避ける
+   の2点だけを足す。 */
+@media (max-height: 560px) and (max-width: 1024px) {
+  .scr-world .mobile-bar {
+    padding: 8px calc(14px + env(safe-area-inset-right)) 0 calc(14px + env(safe-area-inset-left));
+  }
+  .scr-world .mobile-brand { font-size: 13px; }
+  .scr-world .mobile-icon-btn svg { width: 18px; height: 18px; }
+  .scr-world .mobile-menu-panel {
+    top: 46px; left: calc(16px + env(safe-area-inset-left));
+    max-height: calc(100dvh - 60px); overflow-y: auto;
+  }
+  .scr-world .mobile-menu-item { padding: 7px 10px; }
+
+  .scr-world .mobile-foot {
+    padding: 14px calc(24px + env(safe-area-inset-right))
+             calc(4px + env(safe-area-inset-bottom)) calc(24px + env(safe-area-inset-left));
+  }
+  .scr-world .mobile-goal { font-size: 14px; }
+  .scr-world .mobile-handle { padding: 6px 0 2px; }
+  .scr-world .mobile-handle-label { font-size: 12px; padding: 8px 20px; }
+
+  /* シート：高さが無いのでほぼ全面を使い、行間を詰めて表示件数を稼ぐ */
+  .scr-world .mobile-sheet {
+    max-height: 94dvh; border-radius: 14px 14px 0 0;
+    padding: 6px calc(20px + env(safe-area-inset-right))
+             calc(10px + env(safe-area-inset-bottom)) calc(20px + env(safe-area-inset-left));
+  }
+  .scr-world .mobile-sheet-grip { margin-bottom: 8px; }
+  .scr-world .mobile-sheet .ledger-head { padding-bottom: 8px; }
+  .scr-world .mobile-sheet .ledger-row { gap: 12px; padding: 9px 2px; }
+  .scr-world .mobile-sheet .ledger-label { font-size: 14px; }
+  .scr-world .mobile-sheet-endday { margin-top: 10px; padding: 11px 0; }
+
+  .scr-world .hide-hint { bottom: calc(12px + env(safe-area-inset-bottom)); font-size: 10px; padding: 6px 14px; }
+  .scr-world .paused-label { top: 38%; font-size: 13px; }
+  .scr-world .debug-preview-bar { top: 8px; font-size: 10px; padding: 6px 12px; gap: 8px; }
+}
+
+/* ════════════════════════════════════════════════════════════════
+   WORLD / Home — Tidewater (ocean)
+   Same layout as Hearthlight (.scr-world); only the palette changes.
+   Text stays the same warm cream as town (a cool white read poorly
+   against the blue-green water); the single accent is unified to a
+   brass/driftwood gold — a teal accent camouflaged against the water
+   itself, brass is its complement and reads at a glance.
+   Ocean's loop footage (open sky/water) runs brighter than town's,
+   so the top/bottom scrim and panel opacity are pushed up here to
+   keep text and controls legible against it.
+   ════════════════════════════════════════════════════════════════ */
+.scr-world.world-ocean {
+  --h-bg:        #071a1a;
+  --h-ember:     #d9b877;
+  --h-ember-hi:  #ecd5a0;
+  --h-ember-lo:  #b8934f;
+  --h-ember-rgb: 217,184,119;
+  --h-glow-rgb:  217,184,119;
+  --h-gold:      #d9b877;
+  --h-gold-rgb:  217,184,119;
+  --h-panel-rgb: 4,20,20;
+}
+
+.scr-world.world-ocean .world-base {
+  background:
+    linear-gradient(180deg, rgba(var(--h-panel-rgb),0.5) 0%, transparent 34%),
+    linear-gradient(0deg, rgba(var(--h-panel-rgb),0.66) 0%, transparent 32%);
+}
+.scr-world.world-ocean .world-glow {
+  background: radial-gradient(60% 45% at 52% 92%, rgba(var(--h-glow-rgb),0.16), transparent 62%);
+}
+.scr-world.world-ocean .title h1,
+.scr-world.world-ocean .big-clock,
+.scr-world.world-ocean .mobile-brand {
+  text-shadow: 0 2px 10px rgba(0,0,0,0.92), 0 4px 26px rgba(0,0,0,0.72), 0 0 24px rgba(var(--h-gold-rgb),0.4);
+}
+.scr-world.world-ocean .goal-line,
+.scr-world.world-ocean .mobile-goal {
+  text-shadow: 0 2px 10px rgba(0,0,0,0.92), 0 4px 22px rgba(0,0,0,0.7);
+}
+/* The quieter marginalia (info-head, view-controls, ledger, nav, language
+   toggle) is semi-transparent ink in the town theme (e.g. 0.4-0.55 alpha) —
+   town's footage is dark enough that this still reads. Ocean's sky/water is
+   bright enough that a translucent fill shows mostly background through it,
+   no matter how strong the shadow behind it. So for ocean these go solid
+   (same cream as the goal line / title, which already read fine) instead of
+   just adding a shadow on top of the same low alpha. */
+.scr-world.world-ocean .info-head,
+.scr-world.world-ocean .studied-line,
+.scr-world.world-ocean .view-btn:not(.on),
+.scr-world.world-ocean .howlink,
+.scr-world.world-ocean .ledger-head,
+.scr-world.world-ocean .ledger-label,
+.scr-world.world-ocean .nav button:not(.active),
+.scr-world.world-ocean .nav a:not(.active),
+.scr-world.world-ocean .langtoggle button:not(.on),
+.scr-world.world-ocean .mobile-icon-btn,
+.scr-world.world-ocean .mobile-menu-item {
+  color: var(--h-ink);
+}
+.scr-world.world-ocean .mobile-sheet-grip { background: var(--h-ink); opacity: 0.55; }
+.scr-world.world-ocean .info-head,
+.scr-world.world-ocean .studied-line,
+.scr-world.world-ocean .view-btn,
+.scr-world.world-ocean .howlink,
+.scr-world.world-ocean .ledger-head,
+.scr-world.world-ocean .ledger-label,
+.scr-world.world-ocean .ledger-count,
+.scr-world.world-ocean .nav button,
+.scr-world.world-ocean .nav a,
+.scr-world.world-ocean .langtoggle button,
+.scr-world.world-ocean .mobile-handle,
+.scr-world.world-ocean .mobile-menu-item {
+  text-shadow: 0 1px 4px rgba(0,0,0,0.65), 0 2px 12px rgba(0,0,0,0.4);
+}
+.scr-world.world-ocean .ledger-mark {
+  border-color: rgba(var(--h-ink-rgb),0.85);
+}
+.scr-world.world-ocean .btn-endday,
+.scr-world.world-ocean .mobile-handle-label {
+  background: rgba(var(--h-panel-rgb),0.55);
+}
+.scr-world.world-ocean .mobile-foot {
+  background: linear-gradient(0deg, rgba(var(--h-panel-rgb),0.94), rgba(var(--h-panel-rgb),0.55) 68%, transparent);
+}
+
+/* ════════════════════════════════════════════════════════════════
+   WORLD / Home — Greatroot Hollow (forest)
+   Same layout as Hearthlight (.scr-world); only the palette changes.
+   The accent is the campfire at the foot of the tree — an amber pushed
+   yellower than town's ember so the two read as different worlds, and
+   the complement of the surrounding green so it never sinks into the
+   footage (the reason a moss/leaf accent was ruled out, same as ocean's
+   teal). Text stays the warm cream shared by all three worlds.
+   Forest's loop footage is bright daytime canopy, so — as with ocean —
+   the scrim and panel opacity are pushed up and the marginalia goes
+   solid rather than translucent.
+   Unlike ocean, the glow is kept near town's strength: the campfire sits
+   at bottom-centre of the frame, right where .world-glow lands, so the
+   halo reinforces something actually in the video.
+   ════════════════════════════════════════════════════════════════ */
+.scr-world.world-forest {
+  --h-bg:        #0d1810;
+  --h-ember:     #f2b544;
+  --h-ember-hi:  #f8cd72;
+  --h-ember-lo:  #d9922a;
+  --h-ember-rgb: 242,181,68;
+  --h-glow-rgb:  245,165,60;
+  --h-gold:      #f2b544;
+  --h-gold-rgb:  242,181,68;
+  --h-panel-rgb: 8,18,10;
+}
+
+.scr-world.world-forest .world-base {
+  background:
+    linear-gradient(180deg, rgba(var(--h-panel-rgb),0.5) 0%, transparent 34%),
+    linear-gradient(0deg, rgba(var(--h-panel-rgb),0.66) 0%, transparent 32%);
+}
+.scr-world.world-forest .world-glow {
+  background: radial-gradient(60% 45% at 52% 92%, rgba(var(--h-glow-rgb),0.18), transparent 62%);
+}
+.scr-world.world-forest .title h1,
+.scr-world.world-forest .big-clock,
+.scr-world.world-forest .mobile-brand {
+  text-shadow: 0 2px 10px rgba(0,0,0,0.92), 0 4px 26px rgba(0,0,0,0.72), 0 0 24px rgba(var(--h-gold-rgb),0.4);
+}
+.scr-world.world-forest .goal-line,
+.scr-world.world-forest .mobile-goal {
+  text-shadow: 0 2px 10px rgba(0,0,0,0.92), 0 4px 22px rgba(0,0,0,0.7);
+}
+.scr-world.world-forest .info-head,
+.scr-world.world-forest .studied-line,
+.scr-world.world-forest .view-btn:not(.on),
+.scr-world.world-forest .howlink,
+.scr-world.world-forest .ledger-head,
+.scr-world.world-forest .ledger-label,
+.scr-world.world-forest .nav button:not(.active),
+.scr-world.world-forest .nav a:not(.active),
+.scr-world.world-forest .langtoggle button:not(.on),
+.scr-world.world-forest .mobile-icon-btn,
+.scr-world.world-forest .mobile-menu-item {
+  color: var(--h-ink);
+}
+.scr-world.world-forest .mobile-sheet-grip { background: var(--h-ink); opacity: 0.55; }
+.scr-world.world-forest .info-head,
+.scr-world.world-forest .studied-line,
+.scr-world.world-forest .view-btn,
+.scr-world.world-forest .howlink,
+.scr-world.world-forest .ledger-head,
+.scr-world.world-forest .ledger-label,
+.scr-world.world-forest .ledger-count,
+.scr-world.world-forest .nav button,
+.scr-world.world-forest .nav a,
+.scr-world.world-forest .langtoggle button,
+.scr-world.world-forest .mobile-handle,
+.scr-world.world-forest .mobile-menu-item {
+  text-shadow: 0 1px 4px rgba(0,0,0,0.65), 0 2px 12px rgba(0,0,0,0.4);
+}
+.scr-world.world-forest .ledger-mark {
+  border-color: rgba(var(--h-ink-rgb),0.85);
+}
+.scr-world.world-forest .btn-endday,
+.scr-world.world-forest .mobile-handle-label {
+  background: rgba(var(--h-panel-rgb),0.55);
+}
+.scr-world.world-forest .mobile-foot {
+  background: linear-gradient(0deg, rgba(var(--h-panel-rgb),0.94), rgba(var(--h-panel-rgb),0.55) 68%, transparent);
+}
+
+/* ════════════════════════════════════════════════════════════════
+   END-OF-DAY modal（寸法だけCSS側で持つ。配色はコンポーネントのまま）
+   ════════════════════════════════════════════════════════════════ */
+.end-day-modal { min-width: 380px; max-width: 480px; padding: 40px 48px; background: rgba(30,30,30,0.95); }
+@media (max-width: 640px) {
+  /* min-width:380px は横幅360pxの端末で画面外にはみ出す */
+  .end-day-modal { min-width: 0; width: min(92vw, 420px); padding: 28px 24px; }
+}
+@media (max-height: 560px) and (max-width: 1024px) {
+  .end-day-modal { min-width: 0; width: min(78vw, 420px); padding: 18px 24px; gap: 14px; max-height: 92dvh; overflow-y: auto; }
+}
+
 /* ════════════════════════════════════════════════════════════════
    LAUNCH splash
    ════════════════════════════════════════════════════════════════ */
 .launch { position: fixed; inset: 0; z-index: 3000; background: var(--h-bg); display: flex; align-items: center; justify-content: center; overflow: hidden; }
 .launch.done { opacity: 0; visibility: hidden; transition: opacity 0.6s ease, visibility 0.6s; }
-.launch::after { content: ''; position: absolute; inset: 0; pointer-events: none; background: radial-gradient(46% 42% at 50% 57%, rgba(240,140,55,0.20), transparent 60%); opacity: 0; animation: launchHalo 1.4s 0.3s ease forwards; }
+.launch::after { content: ''; position: absolute; inset: 0; pointer-events: none; background: radial-gradient(46% 42% at 50% 57%, rgba(var(--h-glow-rgb),0.20), transparent 60%); opacity: 0; animation: launchHalo 1.4s 0.3s ease forwards; }
 .launch-core { position: relative; z-index: 1; display: flex; flex-direction: column; align-items: center; gap: 20px; }
-.launch-flame { width: 16px; height: 20px; border-radius: 50% 50% 48% 48% / 64% 64% 38% 38%; background: radial-gradient(circle at 50% 68%, #fff3d6 0%, #f3b659 36%, #e0681f 68%, transparent 82%); box-shadow: 0 0 34px 9px rgba(240,140,55,0.55); filter: blur(0.3px); transform: scale(0); transform-origin: 50% 100%; animation: flameIgnite 0.7s 0.1s cubic-bezier(0.2,0.85,0.25,1) forwards, flameFlick 1.5s 0.9s ease-in-out infinite; }
-.launch-word { font-family: 'Cinzel', serif; font-weight: 300; font-size: clamp(2.2rem, 6vw, 3.4rem); letter-spacing: 0.5em; text-indent: 0.5em; color: var(--h-gold); text-shadow: 0 0 32px rgba(236,160,60,0.5); opacity: 0; transform: translateY(12px); animation: wordRise 0.9s 0.5s cubic-bezier(0.2,0.8,0.2,1) forwards; }
+.launch-flame { width: 16px; height: 20px; border-radius: 50% 50% 48% 48% / 64% 64% 38% 38%; background: radial-gradient(circle at 50% 68%, #fff3d6 0%, #f3b659 36%, #e0681f 68%, transparent 82%); box-shadow: 0 0 34px 9px rgba(var(--h-glow-rgb),0.55); filter: blur(0.3px); transform: scale(0); transform-origin: 50% 100%; animation: flameIgnite 0.7s 0.1s cubic-bezier(0.2,0.85,0.25,1) forwards, flameFlick 1.5s 0.9s ease-in-out infinite; }
+.launch-word { font-family: 'Cinzel', serif; font-weight: 300; font-size: clamp(2.2rem, 6vw, 3.4rem); letter-spacing: 0.5em; text-indent: 0.5em; color: var(--h-gold); text-shadow: 0 0 32px rgba(var(--h-gold-rgb),0.5); opacity: 0; transform: translateY(12px); animation: wordRise 0.9s 0.5s cubic-bezier(0.2,0.8,0.2,1) forwards; }
 .launch-tag { font-family: system-ui, sans-serif; font-size: 12px; letter-spacing: 0.24em; text-transform: uppercase; color: var(--h-ink-dim); opacity: 0; animation: tagFade 0.8s 1.05s ease forwards; }
 @keyframes flameIgnite { 0% { transform: scale(0); } 62% { transform: scale(1.28); } 100% { transform: scale(1); } }
 @keyframes flameFlick { 0%,100% { transform: scale(1) translateY(0); opacity: 0.96; } 50% { transform: scale(1.07) translateY(-1px); opacity: 1; } }
@@ -514,6 +863,7 @@
    ════════════════════════════════════════════════════════════════ */
 body.lang-ja .scr-setup .eyebrow, body.lang-ja .scr-setup h1, body.lang-ja .scr-setup .sub,
 body.lang-ja .scr-setup .custom-row label, body.lang-ja .scr-setup .custom-row .unit,
+body.lang-ja .scr-setup .wc-name, body.lang-ja .scr-setup .wc-tagline, body.lang-ja .scr-setup .wc-thumb-fallback,
 body.lang-ja .scr-setup .begin, body.lang-ja .scr-setup .addtask, body.lang-ja .scr-setup .backlink,
 body.lang-ja .parchment .howlink, body.lang-ja .tour-text, body.lang-ja .tour-btn,
 body.lang-ja .scr-chronicle .eyebrow, body.lang-ja .scr-chronicle .header h1, body.lang-ja .scr-chronicle .header .sub,

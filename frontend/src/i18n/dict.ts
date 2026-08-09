@@ -51,7 +51,18 @@ export const dict = {
   goal_days_left_suffix: { en: 'days to go', ja: '日後' },
   goal_today_label:{ en: 'Goal day is today', ja: '目標日は今日' },
   goal_overdue_label: { en: 'Goal day has passed', ja: '目標日を過ぎました' },
-  studied_days_suffix: { en: 'days studied', ja: '日勉強した' },
+  studied_days_suffix: { en: 'days worked', ja: '日作業した' },
+
+  /* ── Setup · world selection (first step, every day) ── */
+  world_step_eyebrow: { en: 'A World To Grow', ja: '育てる世界' },
+  world_step_h:      { en: 'Which world today?', ja: 'どの世界で進める？' },
+  world_step_p:      { en: 'Pick the world your work will grow. Change it any day.', ja: '作業で育てる世界を選びます。日によって変えても構いません。' },
+  world_continue:    { en: 'Continue', ja: '次へ' },
+  world_town_tagline:  { en: 'Raise a stone town, one day at a time.', ja: '石造りの街を、少しずつ築いていく。' },
+  world_ocean_name:    { en: 'Shipwreck Cove', ja: '難破船の入江' },
+  world_ocean_tagline: { en: 'Repair the wreck, revive the emerald cove.', ja: '難破船を修理し、エメラルドの入江を蘇らせる。' },
+  world_forest_name:    { en: 'Greatroot Hollow', ja: '大樹の根本' },
+  world_forest_tagline: { en: 'Carve out a place to live, at the roots of the great tree.', ja: '大樹の根本に、少しずつ居場所をつくる。' },
 
   /* ── Setup · today's tasks ── */
   task_step_eyebrow: { en: "Today's Endeavour", ja: '今日の営み' },
@@ -79,7 +90,7 @@ export const dict = {
 
   /* ── Chronicle · progress calendar ── */
   cal_legend_done:    { en: 'Completed', ja: '完成' },
-  cal_legend_partial: { en: 'Studied', ja: '勉強した' },
+  cal_legend_partial: { en: 'Worked', ja: '作業した' },
   cal_legend_blank:   { en: 'No progress', ja: '未進行' },
 
   /* ── World · sub screen ── */

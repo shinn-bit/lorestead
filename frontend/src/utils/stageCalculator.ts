@@ -1,4 +1,5 @@
 import { ASSET_BASE } from './assetBase';
+import { DEFAULT_WORLD_ID, type WorldId } from './worlds';
 
 export const MAX_STAGE = 5;
 
@@ -12,21 +13,22 @@ export interface VideoConfig {
  * シンプルな1本（そのステージの「normal」クリップ）。イベント抽選・3部構成の再生は
  * メインのWorldPlayerが utils/stageEvents.ts を使って行う。
  */
-export function getVideoConfig(stage: number): VideoConfig {
+export function getVideoConfig(worldId: WorldId, stage: number): VideoConfig {
   if (stage < 1 || stage > MAX_STAGE) return {};
   const pad = String(stage).padStart(2, '0');
-  return { loopSrc: `${ASSET_BASE}/assets/worlds/town/stage_${pad}/stage_${pad}_normal.mp4` };
+  return { loopSrc: `${ASSET_BASE}/assets/worlds/${worldId}/stage_${pad}/stage_${pad}_normal.mp4` };
 }
 
 /**
  * 各ステージの静止画（カレンダーのサムネイルなど、動画を再生せず1枚で見せたい場面用）。
- * /public/assets/worlds/town/stills/stage_01.png 〜 stage_05.png に配置する。
+ * /public/assets/worlds/<world>/stills/stage_01.png 〜 stage_05.png に配置する。
  * まだ用意されていない場合は呼び出し側で onError フォールバックすること。
+ * worldId が未指定（過去のレコードにworldIdがない場合）は既定の世界にフォールバックする。
  */
-export function getStillSrc(stage: number): string | undefined {
+export function getStillSrc(worldId: WorldId | undefined, stage: number): string | undefined {
   if (stage < 1 || stage > MAX_STAGE) return undefined;
   const pad = String(stage).padStart(2, '0');
-  return `${ASSET_BASE}/assets/worlds/town/stills/stage_${pad}.png`;
+  return `${ASSET_BASE}/assets/worlds/${worldId ?? DEFAULT_WORLD_ID}/stills/stage_${pad}.png`;
 }
 
 // ── タスク型成長 ───────────────────────────────────────

@@ -2,6 +2,14 @@ videos/
 images/
 app_specification*.docx
 
+# World video/still assets.
+# town/ stays committed as the bundled fallback used when VITE_ASSET_BASE is
+# unset (see frontend/src/utils/assetBase.ts). ocean/ and forest/ are served
+# from S3 + CloudFront only — ~275MB of mp4 that the app never reads from the
+# repo in practice. Add a new world here too, and `aws s3 sync` it instead.
+frontend/public/assets/worlds/ocean/
+frontend/public/assets/worlds/forest/
+
 # Dependencies
 node_modules/
 */node_modules/

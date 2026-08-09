@@ -1,27 +1,29 @@
 import { useEffect, useRef } from 'react';
 import { useDraggable } from '../../hooks/useDraggable';
 import { getVideoConfig, MAX_STAGE } from '../../utils/stageCalculator';
+import type { WorldId } from '../../utils/worlds';
 
-function getLoopSrc(stage: number): string {
-  const config = getVideoConfig(stage);
-  return config.loopSrc ?? (getVideoConfig(MAX_STAGE).loopSrc as string);
+function getLoopSrc(worldId: WorldId, stage: number): string {
+  const config = getVideoConfig(worldId, stage);
+  return config.loopSrc ?? (getVideoConfig(worldId, MAX_STAGE).loopSrc as string);
 }
 
 // ── PiP window content (no dragging — OS handles window dragging) ──────────
 interface PiPProps {
+  worldId: WorldId;
   stage: number;
   isActive: boolean;
   onClose: () => void;
 }
 
-export function PiPView({ stage, isActive, onClose }: PiPProps) {
+export function PiPView({ worldId, stage, isActive, onClose }: PiPProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const prevStageRef = useRef(0);
 
   useEffect(() => {
     const video = videoRef.current;
     if (!video) return;
-    video.src = getLoopSrc(stage);
+    video.src = getLoopSrc(worldId, stage);
     video.load();
     video.play().catch(() => {});
     prevStageRef.current = stage;
@@ -32,9 +34,10 @@ export function PiPView({ stage, isActive, onClose }: PiPProps) {
     const video = videoRef.current;
     if (!video || prevStageRef.current === stage) return;
     prevStageRef.current = stage;
-    video.src = getLoopSrc(stage);
+    video.src = getLoopSrc(worldId, stage);
     video.load();
     video.play().catch(() => {});
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [stage]);
 
   useEffect(() => {
@@ -89,12 +92,13 @@ export function PiPView({ stage, isActive, onClose }: PiPProps) {
 }
 
 interface Props {
+  worldId: WorldId;
   stage: number;
   isActive: boolean;
   onExpand: () => void;
 }
 
-export function MiniPlayer({ stage, isActive, onExpand }: Props) {
+export function MiniPlayer({ worldId, stage, isActive, onExpand }: Props) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const prevStageRef = useRef(0);
 
@@ -108,16 +112,17 @@ export function MiniPlayer({ stage, isActive, onExpand }: Props) {
     const video = videoRef.current;
     if (!video || prevStageRef.current === stage) return;
     prevStageRef.current = stage;
-    video.src = getLoopSrc(stage);
+    video.src = getLoopSrc(worldId, stage);
     video.load();
     video.play().catch(() => {});
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [stage]);
 
   // 初回マウント時
   useEffect(() => {
     const video = videoRef.current;
     if (!video) return;
-    video.src = getLoopSrc(stage);
+    video.src = getLoopSrc(worldId, stage);
     video.load();
     video.play().catch(() => {});
     prevStageRef.current = stage;

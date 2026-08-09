@@ -7,6 +7,7 @@ import { useI18n } from '../i18n/I18nContext';
 import { LangToggle } from '../components/LangToggle';
 import { GoalPill } from '../components/GoalDate/GoalPill';
 import { getStage, getOverallProgress, MAX_STAGE } from '../utils/stageCalculator';
+import { getWorld } from '../utils/worlds';
 import { getGoal, daysUntil } from '../utils/goalStore';
 import { isAudioAllowed, setAudioAllowed } from '../utils/audioStore';
 import { saveDailyRecord, countStudiedDays } from '../utils/dailyRecordStore';
@@ -16,6 +17,7 @@ import { SetupScreen } from './SetupScreen';
 import { MiniPlayer, PiPView } from '../components/MiniPlayer/MiniPlayer';
 import { usePictureInPicture } from '../hooks/usePictureInPicture';
 import { HomeTour, loadHomeTourSeen } from '../components/HomeTour/HomeTour';
+import { readDebugPreview, endDebugPreview } from '../utils/debugPreview';
 import type { View } from '../App';
 
 const EyeOffIcon = () => (
@@ -39,7 +41,8 @@ interface Props {
 }
 
 export function MainPage({ onNavigate }: Props) {
-  const { config, startDay, toggleTask, buildDailyRecord, discardDay } = useDailyProgress();
+  const { config, worldId, startDay, toggleTask, buildDailyRecord, discardDay } = useDailyProgress();
+  const world = getWorld(worldId);
   const { isActive } = useVisibility();
   const clock = useClock();
   const { t } = useI18n();
@@ -60,6 +63,11 @@ export function MainPage({ onNavigate }: Props) {
   const { pipWindow, isSupported: isPipSupported, open: openPip, close: closePip, isOpen: isPipOpen } = usePictureInPicture(280, 210);
 
   const effectiveIsActive = isPipOpen || isActive;
+
+  // デバッグのイベントプレビュー（/debug の Play 起点）。通常は null。
+  const [debugPreview] = useState(() => readDebugPreview());
+  const [debugBarHidden, setDebugBarHidden] = useState(false);
+  const forceEventId = debugPreview?.eventId ?? null;
 
   const goal = getGoal();
   const goalDaysLeft = goal ? daysUntil(goal.date) : null;
@@ -83,7 +91,7 @@ export function MainPage({ onNavigate }: Props) {
   if (!config) {
     return (
       <SetupScreen
-        onStartTasks={(labels) => startDay(labels)}
+        onStartTasks={(labels, chosenWorldId) => startDay(labels, chosenWorldId)}
         onNavigate={onNavigate}
       />
     );
@@ -139,6 +147,7 @@ export function MainPage({ onNavigate }: Props) {
   if (isMini) {
     return (
       <MiniPlayer
+        worldId={worldId}
         stage={stage}
         isActive={effectiveIsActive}
         onExpand={() => setIsMini(false)}
@@ -149,9 +158,9 @@ export function MainPage({ onNavigate }: Props) {
   // ── UIを隠す：ループ動画のみ表示。画面クリックで復帰 ──
   if (uiHidden) {
     return (
-      <div className="scr-world ui-hidden" onClick={() => setUiHidden(false)}>
+      <div className={`scr-world world-${worldId} ui-hidden`} onClick={() => setUiHidden(false)}>
         <div className="absolute inset-0" style={{ zIndex: 0 }}>
-          <WorldPlayer stage={stage} isActive={effectiveIsActive} audioOn={audioOn} />
+          <WorldPlayer worldId={worldId} stage={stage} isActive={effectiveIsActive} audioOn={audioOn} forceEventId={forceEventId} />
         </div>
         <div className="hide-hint">{t('hide_ui_hint')}</div>
       </div>
@@ -161,13 +170,24 @@ export function MainPage({ onNavigate }: Props) {
   const worldInactive = !effectiveIsActive;
 
   return (
-    <div className={`scr-world ${worldInactive ? 'inactive' : ''}`}>
+    <div className={`scr-world world-${worldId} ${worldInactive ? 'inactive' : ''}`}>
 
       {/* ── World video ── */}
       <div className="absolute inset-0" style={{ zIndex: 0 }}>
-        <WorldPlayer stage={stage} isActive={effectiveIsActive} audioOn={audioOn} />
+        <WorldPlayer worldId={worldId} stage={stage} isActive={effectiveIsActive} audioOn={audioOn} forceEventId={forceEventId} />
       </div>
       <div className="world-glow" />
+
+      {/* ── Debug event preview banner ── */}
+      {debugPreview && !debugBarHidden && (
+        <div className="debug-preview-bar">
+          <span className="dpb-dot" />
+          <span className="dpb-label">DEBUG · {forceEventId === 'random' ? 'RANDOM' : forceEventId}</span>
+          <a className="dpb-link" href="/debug">← 選択に戻る</a>
+          <button className="dpb-link" onClick={() => { endDebugPreview(); window.location.assign('/'); }}>解除</button>
+          <button className="dpb-close" onClick={() => setDebugBarHidden(true)} aria-label="バナーを隠す">×</button>
+        </div>
+      )}
       <div className="world-base" />
 
       {/* ── Mobile compact chrome (narrow screens only) ── */}
@@ -256,7 +276,7 @@ export function MainPage({ onNavigate }: Props) {
       <div className="info">
         {showClock && <div className="big-clock">{formatClock(clock)}</div>}
         <div className="info-head">
-          <span>{t('medieval_town')}</span>
+          <span>{t(world.nameKey)}</span>
           <span className="phase">{t('phase_label')} {stage} / {MAX_STAGE}</span>
         </div>
         <div className="progress"><div className="progress-fill" style={{ width: `${overallProgress}%` }} /></div>
@@ -344,6 +364,7 @@ export function MainPage({ onNavigate }: Props) {
       {/* Document Picture-in-Picture portal */}
       {isPipOpen && pipWindow && createPortal(
         <PiPView
+          worldId={worldId}
           stage={stage}
           isActive={effectiveIsActive}
           onClose={closePip}

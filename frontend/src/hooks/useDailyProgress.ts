@@ -3,6 +3,7 @@ import type { GrowthConfig, TaskItem } from '../utils/stageCalculator';
 import { getStageByTasks } from '../utils/stageCalculator';
 import type { DailyRecord } from '../utils/dailyRecordStore';
 import { todayLocalDateStr } from '../utils/dateUtils';
+import { DEFAULT_WORLD_ID, type WorldId } from '../utils/worlds';
 
 const CURRENT_DAY_KEY = 'lorestead_current_day';
 
@@ -10,12 +11,16 @@ interface CurrentDay {
   startedAt: number;
   date: string;
   tasks: TaskItem[];
+  worldId: WorldId;
 }
 
 function loadCurrentDay(): CurrentDay | null {
   try {
     const raw = localStorage.getItem(CURRENT_DAY_KEY);
-    return raw ? (JSON.parse(raw) as CurrentDay) : null;
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as CurrentDay;
+    // worldId 導入前に保存された日次進行への後方互換
+    return { ...parsed, worldId: parsed.worldId ?? DEFAULT_WORLD_ID };
   } catch {
     return null;
   }
@@ -42,13 +47,13 @@ export function useDailyProgress() {
     setCurrentState(day);
   }, []);
 
-  /** 新しい日を開始（タスクリストを設定） */
-  const startDay = useCallback((labels: string[]) => {
+  /** 新しい日を開始（タスクリストと世界を設定） */
+  const startDay = useCallback((labels: string[], worldId: WorldId) => {
     const tasks: TaskItem[] = labels
       .map((label) => label.trim())
       .filter((label) => label.length > 0)
       .map((label, i) => ({ id: `task_${Date.now()}_${i}`, label, done: false }));
-    setCurrent({ startedAt: Date.now(), date: todayLocalDateStr(), tasks });
+    setCurrent({ startedAt: Date.now(), date: todayLocalDateStr(), tasks, worldId });
   }, [setCurrent]);
 
   /** タスクの完了状態をトグル */
@@ -79,6 +84,7 @@ export function useDailyProgress() {
       finalizedAt: Date.now(),
       tasks: current.tasks,
       stage,
+      worldId: current.worldId,
       // stage5は最後のタスク着手中にも到達するため、「完了」は全タスク達成で判定する
       isCompleted: totalCount > 0 && doneCount === totalCount,
       studied: doneCount > 0,
@@ -91,10 +97,12 @@ export function useDailyProgress() {
   }, [setCurrent]);
 
   const config: GrowthConfig | null = current ? { tasks: current.tasks } : null;
+  const worldId = current?.worldId ?? DEFAULT_WORLD_ID;
 
   return {
     current,
     config,
+    worldId,
     startDay,
     toggleTask,
     buildDailyRecord,
