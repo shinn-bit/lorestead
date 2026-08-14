@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://lorestead.app/sitemap.xml
+Sitemap: https://lorestead.vercel.app/sitemap.xml
