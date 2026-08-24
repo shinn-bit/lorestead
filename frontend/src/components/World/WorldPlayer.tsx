@@ -50,6 +50,9 @@ export function WorldPlayer({ worldId, stage, isActive, audioOn, forceEventId }:
   const [stalled, setStalled] = useState(false);
   // 見張り番（命令的なコールバック）から最新値を読むためのミラー
   const stalledRef = useRef(false);
+  // 前面のvideoがまだフレームを持っていない状態（クリップの切り替わり、画面回転直後など）。
+  // 素のvideo要素は、フレームが無いと巨大な再生ボタンのプレースホルダを描いてしまう。
+  const [covered, setCovered] = useState(true);
   // 命令的なコールバック（onended/onplaying等）から常に最新値を読めるようref化
   const audioOnRef = useRef(audioOn);
   const worldIdRef = useRef(worldId);
@@ -303,6 +306,18 @@ export function WorldPlayer({ worldId, stage, isActive, audioOn, forceEventId }:
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // ---------- 前面videoがフレームを持つまで静止画で覆う ----------
+  // クリップの切り替え時に 'playing' が250ms以内に来ないと、フレームの無いvideoが
+  // 前面に出て再生ボタンが露出する（回転直後も同様にデコーダが作り直される）。
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const front = frontVideo();
+      // HAVE_CURRENT_DATA 未満＝表示できるフレームが無い
+      setCovered(!front || front.readyState < 2);
+    }, 120);
+    return () => clearInterval(interval);
+  }, []);
+
   // ---------- 見張り番：再生が止まったままになっていたら復帰させる ----------
   // (自動再生ポリシー等でplay()が拒否され続けた場合の保険。ユーザー操作時と定期チェックの両方で確認する)
   useEffect(() => {
@@ -358,6 +373,7 @@ export function WorldPlayer({ worldId, stage, isActive, audioOn, forceEventId }:
       <video
         ref={videoARef}
         playsInline
+        poster={fallbackStill}
         onError={handleVideoError}
         onPlaying={handleVideoPlaying}
         className="absolute inset-0 w-full h-full object-cover"
@@ -366,14 +382,16 @@ export function WorldPlayer({ worldId, stage, isActive, audioOn, forceEventId }:
       <video
         ref={videoBRef}
         playsInline
+        poster={fallbackStill}
         onError={handleVideoError}
         onPlaying={handleVideoPlaying}
         className="absolute inset-0 w-full h-full object-cover"
         style={{ ...bStyle, filter: brightness }}
       />
 
-      {/* 通信が切れている間のフォールバック。動画要素ごと覆い隠す（z-indexは前面10/背面20より上） */}
-      {stalled && (
+      {/* 動画が見せられない間はその段階の静止画で覆う（z-indexは前面10/背面20より上）。
+          文言を出すのは通信が切れているときだけで、クリップの繋ぎ目では静止画だけを挟む。 */}
+      {(stalled || covered) && (
         <div className="world-offline" style={{ zIndex: 30 }}>
           {fallbackStill && (
             <img
@@ -384,7 +402,7 @@ export function WorldPlayer({ worldId, stage, isActive, audioOn, forceEventId }:
               onError={(e) => { e.currentTarget.style.display = 'none'; }}
             />
           )}
-          <p className="world-offline-note">{t('offline_note')}</p>
+          {stalled && <p className="world-offline-note">{t('offline_note')}</p>}
         </div>
       )}
     </div>

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { listDailyRecords, type DailyRecord } from '../../utils/dailyRecordStore';
-import { getStillSrc } from '../../utils/stageCalculator';
+import { useStillSrc } from '../../hooks/useStillSrc';
 import { todayLocalDateStr } from '../../utils/dateUtils';
 import { useI18n } from '../../i18n/I18nContext';
 
@@ -18,13 +18,12 @@ const ChevronRight = () => (
 /** その日の記録の到達ステージを、静止画サムネイルとして表示する（未用意なら簡易プレースホルダー） */
 function DayThumb({ record }: { record: DailyRecord }) {
   const { t } = useI18n();
-  const [failed, setFailed] = useState(false);
-  const src = getStillSrc(record.worldId, record.stage);
+  const { src, onError } = useStillSrc(record.worldId, record.stage);
 
   return (
     <div className="cal-thumb">
-      {src && !failed ? (
-        <img src={src} alt="" loading="lazy" onError={() => setFailed(true)} />
+      {src ? (
+        <img src={src} alt="" loading="lazy" onError={onError} />
       ) : (
         <span className="cal-thumb-fallback">{t('stage_word')} {record.stage}</span>
       )}

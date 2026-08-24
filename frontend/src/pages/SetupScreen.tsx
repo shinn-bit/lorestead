@@ -4,7 +4,7 @@ import { useI18n } from '../i18n/I18nContext';
 import { LangToggle } from '../components/LangToggle';
 import { getGoal, setGoal } from '../utils/goalStore';
 import { WORLDS, getLastWorldId, setLastWorldId, type WorldId } from '../utils/worlds';
-import { getStillSrc } from '../utils/stageCalculator';
+import { useStillSrc } from '../hooks/useStillSrc';
 import type { View } from '../App';
 import type { I18nKey } from '../i18n/dict';
 
@@ -31,12 +31,11 @@ function loadSetupSeen(): boolean {
 interface Geom { top: number; left: number; width: number; height: number; popTop: boolean; }
 
 function WorldThumb({ worldId }: { worldId: WorldId }) {
-  const [failed, setFailed] = useState(false);
-  const src = getStillSrc(worldId, 1);
+  const { src, onError } = useStillSrc(worldId, 1);
   return (
     <div className="wc-thumb">
-      {src && !failed
-        ? <img src={src} alt="" loading="lazy" onError={() => setFailed(true)} />
+      {src
+        ? <img src={src} alt="" loading="lazy" onError={onError} />
         : <span className="wc-thumb-fallback" />}
     </div>
   );
