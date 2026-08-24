@@ -9,14 +9,34 @@
         <item name="colorAccent">@color/colorAccent</item>
     </style>
 
+    <!--
+      WebViewの外側（ステータスバー・ナビゲーションバー・横持ち時の左右の余白）は
+      このテーマの地色がそのまま見える。既定の白のままだと暗い世界画面の周りに
+      白帯が出るため、アプリの地色に合わせる。
+    -->
     <style name="AppTheme.NoActionBar" parent="Theme.AppCompat.DayNight.NoActionBar">
         <item name="windowActionBar">false</item>
         <item name="windowNoTitle">true</item>
         <item name="android:background">@null</item>
+        <item name="android:windowBackground">@color/lore_background</item>
+        <item name="android:statusBarColor">@color/lore_background</item>
+        <item name="android:navigationBarColor">@color/lore_background</item>
+        <item name="android:windowLightStatusBar">false</item>
+        <item name="android:windowLightNavigationBar">false</item>
     </style>
 
-
+    <!--
+      Android 12以降の起動画面は SplashScreen API が描画し、@drawable/splash は無視される
+      （アイコン＋windowSplashScreenBackground で描かれる）。指定しないと地色が白になるため、
+      背景色とアイコンを明示する。postSplashScreenTheme で通常テーマへ引き継ぐ。
+    -->
     <style name="AppTheme.NoActionBarLaunch" parent="Theme.SplashScreen">
+        <item name="windowSplashScreenBackground">@color/lore_background</item>
+        <item name="windowSplashScreenAnimatedIcon">@mipmap/ic_launcher_foreground</item>
+        <item name="postSplashScreenTheme">@style/AppTheme.NoActionBar</item>
         <item name="android:background">@drawable/splash</item>
+        <item name="android:windowBackground">@color/lore_background</item>
+        <item name="android:statusBarColor">@color/lore_background</item>
+        <item name="android:navigationBarColor">@color/lore_background</item>
     </style>
 </resources>

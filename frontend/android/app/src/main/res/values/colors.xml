@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- アプリの地色。Web側の --h-bg と同じ値。システムバーとスプラッシュ背景に使う。 -->
+    <color name="lore_background">#15100b</color>
+</resources>
