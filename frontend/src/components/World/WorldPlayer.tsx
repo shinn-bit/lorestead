@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { pickEventQueue, buildForcedQueue, type EventPick } from '../../utils/stageEvents';
+import { getBundledStillSrc } from '../../utils/stageCalculator';
+import { useI18n } from '../../i18n/I18nContext';
 import type { WorldId } from '../../utils/worlds';
 
 interface Props {
@@ -40,8 +42,12 @@ function attemptPlay(video: HTMLVideoElement, retriesLeft = 5) {
 }
 
 export function WorldPlayer({ worldId, stage, isActive, audioOn, forceEventId }: Props) {
+  const { t } = useI18n();
   const videoARef = useRef<HTMLVideoElement>(null);
   const videoBRef = useRef<HTMLVideoElement>(null);
+  // 動画（CDN）が読めない状態。素のvideo要素の再生ボタンが露出するのを防ぎ、
+  // 同梱の静止画に差し替えて「オフラインである」ことを伝える。
+  const [stalled, setStalled] = useState(false);
   // 命令的なコールバック（onended/onplaying等）から常に最新値を読めるようref化
   const audioOnRef = useRef(audioOn);
   const worldIdRef = useRef(worldId);
@@ -258,6 +264,38 @@ export function WorldPlayer({ worldId, stage, isActive, audioOn, forceEventId }:
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [stage]);
 
+  // ---------- 通信断：静止画にフォールバックし、復帰したら再生し直す ----------
+  function handleVideoError() {
+    setStalled(true);
+  }
+
+  function handleVideoPlaying() {
+    setStalled(false);
+  }
+
+  useEffect(() => {
+    if (typeof navigator !== 'undefined' && navigator.onLine === false) setStalled(true);
+
+    function onOffline() {
+      setStalled(true);
+    }
+    function onOnline() {
+      // 失敗したままのsrcは load() し直さないと再取得されない
+      const front = frontVideo();
+      if (front?.src) {
+        front.load();
+        attemptPlay(front);
+      }
+    }
+    window.addEventListener('offline', onOffline);
+    window.addEventListener('online', onOnline);
+    return () => {
+      window.removeEventListener('offline', onOffline);
+      window.removeEventListener('online', onOnline);
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   // ---------- 見張り番：再生が止まったままになっていたら復帰させる ----------
   // (自動再生ポリシー等でplay()が拒否され続けた場合の保険。ユーザー操作時と定期チェックの両方で確認する)
   useEffect(() => {
@@ -299,20 +337,42 @@ export function WorldPlayer({ worldId, stage, isActive, audioOn, forceEventId }:
 
   const brightness = isActive ? 'brightness(1)' : 'brightness(0.45)';
 
+  const fallbackStill = getBundledStillSrc(worldId, stage);
+
   return (
     <div className="relative w-full h-full bg-black overflow-hidden">
       <video
         ref={videoARef}
         playsInline
+        onError={handleVideoError}
+        onPlaying={handleVideoPlaying}
         className="absolute inset-0 w-full h-full object-cover"
         style={{ ...aStyle, filter: brightness }}
       />
       <video
         ref={videoBRef}
         playsInline
+        onError={handleVideoError}
+        onPlaying={handleVideoPlaying}
         className="absolute inset-0 w-full h-full object-cover"
         style={{ ...bStyle, filter: brightness }}
       />
+
+      {/* 通信が切れている間のフォールバック。動画要素ごと覆い隠す（z-indexは前面10/背面20より上） */}
+      {stalled && (
+        <div className="world-offline" style={{ zIndex: 30 }}>
+          {fallbackStill && (
+            <img
+              src={fallbackStill}
+              alt=""
+              className="world-offline-still"
+              style={{ filter: brightness }}
+              onError={(e) => { e.currentTarget.style.display = 'none'; }}
+            />
+          )}
+          <p className="world-offline-note">{t('offline_note')}</p>
+        </div>
+      )}
     </div>
   );
 }

@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect, useLayoutEffect } from 'react';
+import { useBackHandler } from '../hooks/useBackHandler';
 import { useI18n } from '../i18n/I18nContext';
 import { LangToggle } from '../components/LangToggle';
 import { getGoal, setGoal } from '../utils/goalStore';
@@ -65,6 +66,14 @@ export function SetupScreen({ onStartTasks, onNavigate }: Props) {
     { ref: tasklistRef, key: 'tour_task' },
     { ref: beginRef, key: 'tour_begin' },
   ];
+
+  // Androidのバックキー：ウィザードを1ステップ戻す（従来は入力ごとアプリが終了していた）
+  useBackHandler(() => {
+    if (tourOpen) { setTourOpen(false); return true; }
+    if (view === 'task') { setView('world'); return true; }
+    if (view === 'goal' && editingGoal) { setEditingGoal(false); setView('task'); return true; }
+    return false;
+  });
 
   const nonEmptyTasks = tasks.map((s) => s.trim()).filter((s) => s.length > 0);
   function updateTask(i: number, v: string) { setTasks((p) => p.map((x, idx) => (idx === i ? v : x))); }

@@ -31,6 +31,17 @@ export function getStillSrc(worldId: WorldId | undefined, stage: number): string
   return `${ASSET_BASE}/assets/worlds/${worldId ?? DEFAULT_WORLD_ID}/stills/stage_${pad}.png`;
 }
 
+/**
+ * 同梱アセット側の静止画パス（ASSET_BASE を通さない）。
+ * CDNに繋がらないときのフォールバック専用。ネイティブアプリでは
+ * public/ の中身がそのまま同梱されるため、通信がなくても表示できる。
+ */
+export function getBundledStillSrc(worldId: WorldId | undefined, stage: number): string | undefined {
+  if (stage < 1 || stage > MAX_STAGE) return undefined;
+  const pad = String(stage).padStart(2, '0');
+  return `/assets/worlds/${worldId ?? DEFAULT_WORLD_ID}/stills/stage_${pad}.png`;
+}
+
 // ── タスク型成長 ───────────────────────────────────────
 
 export interface TaskItem {

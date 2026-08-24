@@ -16,6 +16,10 @@ export const dict = {
   sub_screen:      { en: 'SUB SCREEN', ja: 'サブ画面' },
   end_session:     { en: 'END TODAY', ja: '今日を終える' },
 
+  /* ── Home · 通信断・終了操作（ネイティブアプリ） ── */
+  offline_note:    { en: "You're offline. The world starts moving again once you reconnect.", ja: 'オフラインです。接続が戻ると、世界がふたたび動き出します。' },
+  exit_hint:       { en: 'Press back again to close Lorestead', ja: 'もう一度戻るとアプリを終了します' },
+
   /* ── Home · Hide UI ── */
   hide_ui:         { en: 'Hide UI', ja: '表示を隠す' },
   hide_ui_hint:    { en: 'Click anywhere to bring the interface back', ja: '画面をクリックすると表示が戻ります' },
