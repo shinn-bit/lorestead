@@ -1,5 +1,6 @@
 import { openDB, DAILY_RECORDS_STORE } from './frameStore';
 import type { TaskItem } from './stageCalculator';
+import type { WorldId } from './worlds';
 
 /** 確定済みの日次記録 1件（「今日を終える」時に1件だけ書き込まれる） */
 export interface DailyRecord {
@@ -9,6 +10,7 @@ export interface DailyRecord {
   finalizedAt: number;
   tasks: TaskItem[];
   stage: number;          // 確定時点の到達ステージ
+  worldId: WorldId;        // どの世界で育てた日か（worldId導入前の記録には無いのでオプショナル扱いで読む）
   isCompleted: boolean;   // 全タスク達成
   studied: boolean;       // 1つ以上達成した日か
 }

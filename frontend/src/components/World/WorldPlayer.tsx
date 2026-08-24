@@ -1,11 +1,18 @@
 import { useEffect, useRef, useState } from 'react';
-import { pickEventQueue } from '../../utils/stageEvents';
+import { pickEventQueue, buildForcedQueue, type EventPick } from '../../utils/stageEvents';
+import type { WorldId } from '../../utils/worlds';
 
 interface Props {
+  worldId: WorldId;
   stage: number;
   isActive: boolean;
   /** マイクボタンで音声が許可されているか（既定オフ） */
   audioOn: boolean;
+  /**
+   * デバッグ再生用：特定イベントを固定表示する。'random'/未指定なら通常の抽選。
+   * 指定時は「そのイベント ⇄ normal」を交互に流す（すぐ確認でき、かつ間延びしない）。
+   */
+  forceEventId?: string | null;
 }
 
 interface PendingTransition {
@@ -32,11 +39,15 @@ function attemptPlay(video: HTMLVideoElement, retriesLeft = 5) {
   });
 }
 
-export function WorldPlayer({ stage, isActive, audioOn }: Props) {
+export function WorldPlayer({ worldId, stage, isActive, audioOn, forceEventId }: Props) {
   const videoARef = useRef<HTMLVideoElement>(null);
   const videoBRef = useRef<HTMLVideoElement>(null);
   // 命令的なコールバック（onended/onplaying等）から常に最新値を読めるようref化
   const audioOnRef = useRef(audioOn);
+  const worldIdRef = useRef(worldId);
+  worldIdRef.current = worldId;
+  const forceEventIdRef = useRef(forceEventId);
+  forceEventIdRef.current = forceEventId;
 
   // A/B どちらが「前面（表示中）」か
   const aIsFrontRef = useRef(true);
@@ -72,13 +83,26 @@ export function WorldPlayer({ stage, isActive, audioOn }: Props) {
     turnMutedRef.current = turn.muted;
   }
 
+  /**
+   * 新しい巡（1回に流すイベント）を選ぶ。
+   * forceEventId が指定されていれば抽選せず「そのイベント ⇄ normal」を交互に返す。
+   */
+  function pickTurn(): EventPick {
+    const forced = forceEventIdRef.current;
+    if (forced && forced !== 'random') {
+      const nextId = lastEventIdRef.current === forced ? 'normal' : forced;
+      return buildForcedQueue(worldIdRef.current, stageRef.current, nextId);
+    }
+    return pickEventQueue(worldIdRef.current, stageRef.current, lastEventIdRef.current);
+  }
+
   /** 「次に流すクリップ」を副作用なしに計算する（巡の続き、または新しい巡の1本目） */
   function computeNext(): NextPick {
     const nextIdx = queueIdxRef.current + 1;
     if (nextIdx < queueRef.current.length) {
       return { src: queueRef.current[nextIdx], muted: turnMutedRef.current };
     }
-    const { id, queue, muted } = pickEventQueue(stageRef.current, lastEventIdRef.current);
+    const { id, queue, muted } = pickTurn();
     return { src: queue[0] ?? '', muted, newTurn: { id, queue, muted } };
   }
 
@@ -203,7 +227,7 @@ export function WorldPlayer({ stage, isActive, audioOn }: Props) {
     if (!vidA) return;
 
     stageRef.current = stage;
-    const pick = pickEventQueue(stageRef.current);
+    const pick = pickTurn();
     beginTurn(pick);
     const first = pick.queue[0];
     if (first) {
@@ -227,7 +251,7 @@ export function WorldPlayer({ stage, isActive, audioOn }: Props) {
     }
     stageRef.current = stage;
     preloadRef.current = null; // 旧ステージ向けの先読みは無効化
-    const pick = pickEventQueue(stageRef.current);
+    const pick = pickTurn();
     beginTurn(pick);
     const first = pick.queue[0];
     if (first) crossfadeTo(first, false, pick.muted);

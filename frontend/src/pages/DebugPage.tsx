@@ -3,12 +3,28 @@ import { getStageByTasks, MAX_STAGE } from '../utils/stageCalculator';
 import { WorldPlayer } from '../components/World/WorldPlayer';
 import { getGoal, setGoal, clearGoal, daysUntil, type Goal } from '../utils/goalStore';
 import { listDailyRecords, clearDailyRecords, type DailyRecord } from '../utils/dailyRecordStore';
+import { listStageEventIds } from '../utils/stageEvents';
+import { startDebugPreview } from '../utils/debugPreview';
+import { WORLDS, DEFAULT_WORLD_ID, type WorldId } from '../utils/worlds';
 
 const DEBUG_TASK_TOTAL = 5;
 
 export function DebugPage() {
   const [doneCount, setDoneCount] = useState(0);
+  const [worldId, setWorldId] = useState<WorldId>(DEFAULT_WORLD_ID);
   const stage = getStageByTasks(doneCount, DEBUG_TASK_TOTAL);
+
+  // イベント選択（Random + そのステージのイベント）。ワールド/ステージが変わると選択を検証。
+  const eventIds = listStageEventIds(worldId, stage);
+  const [eventId, setEventId] = useState('random');
+  useEffect(() => {
+    if (eventId !== 'random' && !eventIds.includes(eventId)) setEventId('random');
+  }, [eventIds, eventId]);
+
+  function handlePlay() {
+    startDebugPreview(doneCount, eventId, worldId);
+    window.location.assign('/');
+  }
 
   const [goal, setGoalState] = useState<Goal | null>(() => getGoal());
   const [records, setRecords] = useState<DailyRecord[]>([]);
@@ -41,7 +57,7 @@ export function DebugPage() {
     <div className="relative w-full h-dvh overflow-hidden bg-black">
       {/* World - debug page では常に明るく表示 */}
       <div className="absolute inset-0">
-        <WorldPlayer stage={stage} isActive={true} audioOn={false} />
+        <WorldPlayer key={worldId} worldId={worldId} stage={stage} isActive={true} audioOn={false} />
       </div>
 
       {/* Debug panel */}
@@ -69,6 +85,28 @@ export function DebugPage() {
               Stage <span className="text-red-400 font-bold">{stage}</span> / {MAX_STAGE}
             </p>
             <p className="text-white">Tasks {doneCount} / {DEBUG_TASK_TOTAL}</p>
+            <p className="text-white">World <span className="text-red-400 font-bold">{worldId}</span></p>
+          </div>
+
+          {/* World switch: 切り替えると WorldPlayer を貼り直す（key）＋イベント一覧も差し替わる */}
+          <div>
+            <p className="text-white/30 text-xs mb-2 uppercase tracking-widest">World</p>
+            <div className="flex gap-1">
+              {WORLDS.map((w) => (
+                <button
+                  key={w.id}
+                  onClick={() => setWorldId(w.id)}
+                  className="flex-1 py-2 rounded-lg text-xs transition-all"
+                  style={{
+                    background: worldId === w.id ? 'rgba(255,60,60,0.25)' : 'rgba(255,255,255,0.06)',
+                    border: worldId === w.id ? '1px solid rgba(255,60,60,0.5)' : '1px solid transparent',
+                    color: '#fff',
+                  }}
+                >
+                  {w.id}
+                </button>
+              ))}
+            </div>
           </div>
 
           {/* Task done-count jump */}
@@ -114,6 +152,37 @@ export function DebugPage() {
                 );
               })}
             </div>
+          </div>
+
+          {/* Event preview: pick event + play the real home UI */}
+          <div>
+            <p className="text-white/30 text-xs mb-2 uppercase tracking-widest">Event (stage {stage})</p>
+            <div className="flex flex-wrap gap-1 mb-3">
+              {['random', ...eventIds].map((id) => (
+                <button
+                  key={id}
+                  onClick={() => setEventId(id)}
+                  className="px-2.5 py-1.5 rounded-lg text-xs transition-all"
+                  style={{
+                    background: eventId === id ? 'rgba(80,160,255,0.25)' : 'rgba(255,255,255,0.06)',
+                    border: eventId === id ? '1px solid rgba(80,160,255,0.6)' : '1px solid transparent',
+                    color: '#fff',
+                  }}
+                >
+                  {id}
+                </button>
+              ))}
+            </div>
+            <button
+              onClick={handlePlay}
+              className="w-full py-2.5 rounded-lg text-xs font-bold uppercase tracking-widest transition-all"
+              style={{ background: 'rgba(80,160,255,0.85)', color: '#06121f', border: '1px solid rgba(120,190,255,0.9)' }}
+            >
+              ▶ Play (Test · Task1–5)
+            </button>
+            <p className="text-white/25 text-[10px] mt-1.5 leading-snug">
+              本番のホームUIを開き、選択イベントを再生します（進行中の今日は退避）。
+            </p>
           </div>
 
           {/* Goal date */}

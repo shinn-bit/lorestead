@@ -19,7 +19,7 @@ const ChevronRight = () => (
 function DayThumb({ record }: { record: DailyRecord }) {
   const { t } = useI18n();
   const [failed, setFailed] = useState(false);
-  const src = getStillSrc(record.stage);
+  const src = getStillSrc(record.worldId, record.stage);
 
   return (
     <div className="cal-thumb">
