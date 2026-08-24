@@ -395,7 +395,8 @@
 
 /* ── バックキー1回目の終了予告（Androidのみ表示される） ── */
 .exit-hint {
-  position: fixed; left: 50%; bottom: 42px; transform: translateX(-50%); z-index: 90;
+  /* セットアップ(1000)・ツアー(1100)・起動スプラッシュ(3000)より前に出す */
+  position: fixed; left: 50%; bottom: 42px; transform: translateX(-50%); z-index: 3100;
   font-family: 'Cinzel', serif; font-size: 11px; letter-spacing: 0.16em; white-space: nowrap;
   color: rgba(var(--h-ink-rgb),0.7); background: rgba(20,13,8,0.78);
   padding: 9px 20px; border-radius: 9999px; border: 1px solid rgba(var(--h-ember-rgb),0.2);

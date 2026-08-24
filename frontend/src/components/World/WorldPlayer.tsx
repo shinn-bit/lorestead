@@ -48,6 +48,8 @@ export function WorldPlayer({ worldId, stage, isActive, audioOn, forceEventId }:
   // 動画（CDN）が読めない状態。素のvideo要素の再生ボタンが露出するのを防ぎ、
   // 同梱の静止画に差し替えて「オフラインである」ことを伝える。
   const [stalled, setStalled] = useState(false);
+  // 見張り番（命令的なコールバック）から最新値を読むためのミラー
+  const stalledRef = useRef(false);
   // 命令的なコールバック（onended/onplaying等）から常に最新値を読めるようref化
   const audioOnRef = useRef(audioOn);
   const worldIdRef = useRef(worldId);
@@ -265,33 +267,38 @@ export function WorldPlayer({ worldId, stage, isActive, audioOn, forceEventId }:
   }, [stage]);
 
   // ---------- 通信断：静止画にフォールバックし、復帰したら再生し直す ----------
+  function markStalled(v: boolean) {
+    stalledRef.current = v;
+    setStalled(v);
+  }
+
   function handleVideoError() {
-    setStalled(true);
+    markStalled(true);
   }
 
   function handleVideoPlaying() {
-    setStalled(false);
+    markStalled(false);
+  }
+
+  /** 失敗したままのsrcは load() し直さないと再取得されない（play()だけでは復帰しない） */
+  function reloadFront() {
+    const front = frontVideo();
+    if (!front?.src) return;
+    front.load();
+    attemptPlay(front);
   }
 
   useEffect(() => {
-    if (typeof navigator !== 'undefined' && navigator.onLine === false) setStalled(true);
+    if (typeof navigator !== 'undefined' && navigator.onLine === false) markStalled(true);
 
     function onOffline() {
-      setStalled(true);
-    }
-    function onOnline() {
-      // 失敗したままのsrcは load() し直さないと再取得されない
-      const front = frontVideo();
-      if (front?.src) {
-        front.load();
-        attemptPlay(front);
-      }
+      markStalled(true);
     }
     window.addEventListener('offline', onOffline);
-    window.addEventListener('online', onOnline);
+    window.addEventListener('online', reloadFront);
     return () => {
       window.removeEventListener('offline', onOffline);
-      window.removeEventListener('online', onOnline);
+      window.removeEventListener('online', reloadFront);
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -300,6 +307,13 @@ export function WorldPlayer({ worldId, stage, isActive, audioOn, forceEventId }:
   // (自動再生ポリシー等でplay()が拒否され続けた場合の保険。ユーザー操作時と定期チェックの両方で確認する)
   useEffect(() => {
     function resumeIfStuck() {
+      // 読み込みに失敗している間は、通信が戻ったかどうかに関わらず定期的に取得し直す。
+      // AndroidのWebViewでは 'online' が発火しないことがあり、イベント頼みだと
+      // 圏外表示のまま復帰しなくなる。
+      if (stalledRef.current) {
+        reloadFront();
+        return;
+      }
       const front = frontVideo();
       if (!front || !front.paused) return;
       if (front.ended) {
